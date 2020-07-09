@@ -1,5 +1,5 @@
-# go-client
-xxl-job golang 客户端
+# xxl-job go-client
+xxl-job golang 客户端(功能完善中...)
 
 ## Example
 ```
