@@ -1,8 +1,3 @@
-# go-client
-xxl-job golang 客户端
-
-## Example
-```
 package main
 
 import (
@@ -21,6 +16,3 @@ func main() {
 	exec.RegTask("task.test2",task.Test2)
 	exec.Run()
 }
-```
-# see
-github.com/xxl-job/go-client/example/
