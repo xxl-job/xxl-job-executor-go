@@ -7,8 +7,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -65,7 +68,12 @@ func (e *executor) Run() (err error) {
 	}
 	// 监听端口并提供服务
 	log.Println("Starting server at " + e.address)
-	return server.ListenAndServe()
+	go server.ListenAndServe()
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	e.registryRemove()
+	return nil
 }
 
 //注册任务
@@ -146,13 +154,36 @@ func (e *executor) registry() {
 		<-t.C
 		res, err := http.Post(e.opts.ServerAddr+"/api/registry", "application/json", strings.NewReader(string(param)))
 		if err != nil {
-			fmt.Println(err)
+			log.Println("执行器注册失败:" + err.Error())
 		}
 		body, err := ioutil.ReadAll(res.Body)
 		log.Println("执行器注册成功:" + string(body))
 		res.Body.Close()
 		t.Reset(time.Second * time.Duration(20)) //20秒心跳防止过期
 	}
+}
+
+//执行器注册摘除
+func (e *executor) registryRemove() {
+
+	t := time.NewTimer(time.Second * 0) //初始立即执行
+	defer t.Stop()
+	req := &Registry{
+		RegistryGroup: "EXECUTOR",
+		RegistryKey:   e.opts.RegistryKey,
+		RegistryValue: "http://" + e.address,
+	}
+	param, err := json.Marshal(req)
+	if err != nil {
+		log.Println("执行器摘除失败:" + err.Error())
+	}
+	res, err := http.Post(e.opts.ServerAddr+"/api/registryRemove", "application/json", strings.NewReader(string(param)))
+	if err != nil {
+		log.Println("执行器摘除失败:" + err.Error())
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	log.Println("执行器摘除成功:" + string(body))
+	res.Body.Close()
 }
 
 //回调任务列表
