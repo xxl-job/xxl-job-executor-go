@@ -148,19 +148,19 @@ func (e *executor) registry() {
 	}
 	param, err := json.Marshal(req)
 	if err != nil {
-		log.Fatal("执行器注册失败:" + err.Error())
+		log.Fatal("执行器注册信息解析失败:" + err.Error())
 	}
 	for {
 		<-t.C
 		result, err := http.Post(e.opts.ServerAddr+"/api/registry", "application/json", strings.NewReader(string(param)))
 		if err != nil {
-			log.Fatal("执行器注册失败:" + err.Error())
+			log.Println("执行器注册失败:" + err.Error())
 		}
 		body, err := ioutil.ReadAll(result.Body)
 		res := &res{}
 		json.Unmarshal(body, &res)
 		if res.Code != 200 {
-			log.Fatal("执行器注册失败:" + string(body))
+			log.Println("执行器注册失败:" + string(body))
 		}
 		log.Println("执行器注册成功:" + string(body))
 		result.Body.Close()
