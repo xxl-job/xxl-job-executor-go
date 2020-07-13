@@ -152,13 +152,18 @@ func (e *executor) registry() {
 	}
 	for {
 		<-t.C
-		res, err := http.Post(e.opts.ServerAddr+"/api/registry", "application/json", strings.NewReader(string(param)))
+		result, err := http.Post(e.opts.ServerAddr+"/api/registry", "application/json", strings.NewReader(string(param)))
 		if err != nil {
-			log.Println("执行器注册失败:" + err.Error())
+			log.Fatal("执行器注册失败:" + err.Error())
 		}
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := ioutil.ReadAll(result.Body)
+		res := &res{}
+		json.Unmarshal(body, &res)
+		if res.Code != 200 {
+			log.Fatal("执行器注册失败:" + string(body))
+		}
 		log.Println("执行器注册成功:" + string(body))
-		res.Body.Close()
+		result.Body.Close()
 		t.Reset(time.Second * time.Duration(20)) //20秒心跳防止过期
 	}
 }
