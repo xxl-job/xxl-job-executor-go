@@ -36,6 +36,7 @@ func returnCall(req *RunReq, code int64) []byte {
 	return str
 }
 
+
 //杀死任务返回
 func returnKill(req *killReq, code int64) []byte {
 	msg := ""
@@ -70,8 +71,8 @@ func returnLog(req *logReq, code int64) []byte {
 //通用返回
 func returnGeneral() []byte {
 	data := &res{
-		Code:200,
-		Msg:"",
+		Code: 200,
+		Msg:  "",
 	}
 	str, _ := json.Marshal(data)
 	return str

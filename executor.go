@@ -37,18 +37,23 @@ func newExecutor(opts ...Option) *executor {
 }
 
 type executor struct {
-	opts     Options
-	address  string
-	taskList //注册任务列表
-	mu       sync.RWMutex
+	opts    Options
+	address string
+	regList *taskList //注册任务列表
+	runList *taskList //正在执行任务列表
+	mu      sync.RWMutex
 }
 
 func (e *executor) Init(opts ...Option) {
 	for _, o := range opts {
 		o(&e.opts)
 	}
-	e.data = make(map[string]*Task)
-	e.runList = make(map[int64]*Task)
+	e.regList = &taskList{
+		data: make(map[string]*Task),
+	}
+	e.runList = &taskList{
+		data: make(map[string]*Task),
+	}
 	e.address = e.opts.ExecutorIp + ":" + e.opts.ExecutorPort
 	go e.registry()
 }
@@ -80,7 +85,7 @@ func (e *executor) Run() (err error) {
 func (e *executor) RegTask(pattern string, task TaskFunc) {
 	var t = &Task{}
 	t.fn = task
-	e.Set(pattern, t)
+	e.regList.Set(pattern, t)
 	return
 }
 
@@ -91,17 +96,17 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	req, _ := ioutil.ReadAll(request.Body)
 	param := &RunReq{}
 	json.Unmarshal(req, &param)
-	if !e.Exists(param.ExecutorHandler) {
+	if !e.regList.Exists(param.ExecutorHandler) {
 		writer.Write(returnCall(param, 500))
 		log.Println("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
 		return
 	}
-	task := e.Get(param.ExecutorHandler)
+	task := e.regList.Get(param.ExecutorHandler)
 	task.Ext, task.Cancel = context.WithCancel(context.Background())
 	task.Id = param.JobID
 	task.Name = param.ExecutorHandler
 	task.Param = param
-	e.SetRunTask(param.JobID, task)
+	e.runList.Set(Int64ToStr(param.JobID), task)
 	go task.Run(func() {
 		e.callback(task)
 	})
@@ -116,14 +121,14 @@ func (e *executor) killTask(writer http.ResponseWriter, request *http.Request) {
 	req, _ := ioutil.ReadAll(request.Body)
 	param := &killReq{}
 	json.Unmarshal(req, &param)
-	if !e.IsRun(param.JobID) {
+	if !e.runList.Exists(Int64ToStr(param.JobID)) {
 		writer.Write(returnKill(param, 500))
 		log.Println("任务[" + Int64ToStr(param.JobID) + "]没有运行")
 		return
 	}
-	task := e.GetRunTask(param.JobID)
+	task := e.runList.Get(Int64ToStr(param.JobID))
 	task.Cancel()
-	e.DelRunTask(param.JobID)
+	e.runList.Del(Int64ToStr(param.JobID))
 	writer.Write(returnGeneral())
 }
 
@@ -152,7 +157,7 @@ func (e *executor) registry() {
 	}
 	for {
 		<-t.C
-		result, err := http.Post(e.opts.ServerAddr+"/api/registry", "application/json", strings.NewReader(string(param)))
+		result, err := e.post("/api/registry", string(param))
 		if err != nil {
 			log.Println("执行器注册失败:" + err.Error())
 		}
@@ -170,7 +175,6 @@ func (e *executor) registry() {
 
 //执行器注册摘除
 func (e *executor) registryRemove() {
-
 	t := time.NewTimer(time.Second * 0) //初始立即执行
 	defer t.Stop()
 	req := &Registry{
@@ -182,7 +186,7 @@ func (e *executor) registryRemove() {
 	if err != nil {
 		log.Println("执行器摘除失败:" + err.Error())
 	}
-	res, err := http.Post(e.opts.ServerAddr+"/api/registryRemove", "application/json", strings.NewReader(string(param)))
+	res, err := e.post("/api/registryRemove", string(param))
 	if err != nil {
 		log.Println("执行器摘除失败:" + err.Error())
 	}
@@ -193,11 +197,24 @@ func (e *executor) registryRemove() {
 
 //回调任务列表
 func (e *executor) callback(task *Task) {
-	res, err := http.Post(e.opts.ServerAddr+"/api/callback", "application/json",
-		strings.NewReader(string(returnCall(task.Param, 200))))
+	res, err := e.post("/api/callback", string(returnCall(task.Param, 200)))
 	if err != nil {
 		fmt.Println(err)
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	log.Println("任务回调成功:" + string(body))
+}
+
+//post
+func (e *executor) post(action, body string) (resp *http.Response, err error) {
+	request, err := http.NewRequest("POST", e.opts.ServerAddr+action, strings.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	request.Header.Set("XXL-RPC-ACCESS-TOKEN", e.opts.AccessToken)
+	client := http.Client{
+		Timeout: e.opts.Timeout,
+	}
+	return client.Do(request)
 }

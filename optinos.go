@@ -1,13 +1,18 @@
 package xxl
 
-import "github.com/go-basic/ipv4"
+import (
+	"github.com/go-basic/ipv4"
+	"time"
+)
 
 type Options struct {
-	ServerAddr   string `json:"server_addr"`   //调度中心地址
-	ExecutorIp   string `json:"executor_ip"`   //本地(执行器)IP(可自行获取)
-	ExecutorPort string `json:"executor_port"` //本地(执行器)端口
-	RegistryKey  string `json:"registry_key"`  //执行器名称
-	LogDir       string `json:"log_dir"`       //日志目录
+	ServerAddr   string        `json:"server_addr"`   //调度中心地址
+	AccessToken  string        `json:"access_token"`  //请求令牌
+	Timeout      time.Duration `json:"timeout"`       //接口超时时间
+	ExecutorIp   string        `json:"executor_ip"`   //本地(执行器)IP(可自行获取)
+	ExecutorPort string        `json:"executor_port"` //本地(执行器)端口
+	RegistryKey  string        `json:"registry_key"`  //执行器名称
+	LogDir       string        `json:"log_dir"`       //日志目录
 }
 
 func newOptions(opts ...Option) Options {
@@ -29,12 +34,27 @@ type Option func(o *Options)
 var (
 	DefaultExecutorPort = "9999"
 	DefaultRegistryKey  = "golang-jobs"
+	DefaultTimeOut      = 10 * time.Second
 )
 
 // 设置调度中心地址
 func ServerAddr(addr string) Option {
 	return func(o *Options) {
 		o.ServerAddr = addr
+	}
+}
+
+// 请求令牌
+func AccessToken(token string) Option {
+	return func(o *Options) {
+		o.AccessToken = token
+	}
+}
+
+// 请求令牌
+func Timeout(timeout time.Duration) Option {
+	return func(o *Options) {
+		o.Timeout = timeout
 	}
 }
 

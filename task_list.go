@@ -6,7 +6,6 @@ import "sync"
 type taskList struct {
 	mu      sync.RWMutex
 	data    map[string]*Task
-	runList map[int64]*Task //运行任务列表
 }
 
 //设置数据
@@ -46,31 +45,4 @@ func (t *taskList) Len() int {
 func (t *taskList) Exists(key string) bool {
 	_, ok := t.data[key]
 	return ok
-}
-
-//任务是否在运行列表
-func (t *taskList) IsRun(key int64) bool {
-	_, ok := t.runList[key]
-	return ok
-}
-
-//获取运行的任务
-func (t *taskList) SetRunTask(key int64, val *Task) {
-	t.mu.Lock()
-	t.runList[key] = val
-	t.mu.Unlock()
-}
-
-//获取运行的任务
-func (t *taskList) GetRunTask(key int64) *Task {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-	return t.runList[key]
-}
-
-//获取运行的任务
-func (t *taskList) DelRunTask(key int64) {
-	t.mu.RLock()
-	delete(t.runList, key)
-	defer t.mu.RUnlock()
 }
