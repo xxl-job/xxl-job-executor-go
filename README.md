@@ -1,5 +1,11 @@
 # xxl-job go-client
-xxl-job golang 客户端(功能完善中...)
+很多公司java与go开发共存，java中有xxl-job做为任务调度引擎，为此也出现了go客户端，使用起来比较简单：
+# 支持
+```	
+1.执行器注册
+2.耗时任务取消
+3.任务注册，像写http.Handler一样方便
+```
 
 ## Example
 ```
