@@ -97,7 +97,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	param := &RunReq{}
 	json.Unmarshal(req, &param)
 	if !e.regList.Exists(param.ExecutorHandler) {
-		writer.Write(returnCall(param, 500))
+		writer.Write(returnCall(param, 500, "Task not registered"))
 		log.Println("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
 		return
 	}
@@ -107,8 +107,8 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	task.Name = param.ExecutorHandler
 	task.Param = param
 	e.runList.Set(Int64ToStr(param.JobID), task)
-	go task.Run(func() {
-		e.callback(task)
+	go task.Run(func(code int64, msg string) {
+		e.callback(task, code, msg)
 	})
 	log.Println("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
 	writer.Write(returnGeneral())
@@ -196,8 +196,8 @@ func (e *executor) registryRemove() {
 }
 
 //回调任务列表
-func (e *executor) callback(task *Task) {
-	res, err := e.post("/api/callback", string(returnCall(task.Param, 200)))
+func (e *executor) callback(task *Task, code int64, msg string) {
+	res, err := e.post("/api/callback", string(returnCall(task.Param, code, msg)))
 	if err != nil {
 		fmt.Println(err)
 	}

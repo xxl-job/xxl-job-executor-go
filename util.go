@@ -17,11 +17,7 @@ func StrToInt64(str string) int64 {
 }
 
 //执行任务回调
-func returnCall(req *RunReq, code int64) []byte {
-	msg := ""
-	if code != 200 {
-		msg = "Task not registered"
-	}
+func returnCall(req *RunReq, code int64, msg string) []byte {
 	data := call{
 		&callElement{
 			LogID:      req.LogID,
@@ -35,7 +31,6 @@ func returnCall(req *RunReq, code int64) []byte {
 	str, _ := json.Marshal(data)
 	return str
 }
-
 
 //杀死任务返回
 func returnKill(req *killReq, code int64) []byte {

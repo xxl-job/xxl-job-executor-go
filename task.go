@@ -2,6 +2,8 @@ package xxl
 
 import (
 	"context"
+	"fmt"
+	"log"
 )
 
 //任务执行函数
@@ -20,10 +22,17 @@ type Task struct {
 }
 
 //运行任务
-func (t *Task) Run(callback func()) {
+func (t *Task) Run(callback func(code int64, msg string)) {
 	t.Ext, t.Cancel = context.WithCancel(context.Background())
+	defer func(cancel func()) {
+		if err := recover(); err != nil {
+			log.Println(t.Info()+" panic: ", err)
+			callback(500, "task panic:"+fmt.Sprintf("%v", err))
+			cancel()
+		}
+	}(t.Cancel)
 	t.fn(t.Ext, t.Param)
-	callback()
+	callback(200, "")
 	return
 }
 

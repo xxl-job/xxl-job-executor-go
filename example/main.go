@@ -16,5 +16,6 @@ func main() {
 	exec.Init()
 	exec.RegTask("task.test", task.Test)
 	exec.RegTask("task.test2", task.Test2)
+	exec.RegTask("task.panic", task.Panic)
 	exec.Run()
 }
