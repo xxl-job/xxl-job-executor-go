@@ -19,8 +19,8 @@ type Registry struct {
 type call []*callElement
 
 type callElement struct {
-	LogID         int64         `json:"logId"`
-	LogDateTim    int64         `json:"logDateTim"`
+	LogID         int64          `json:"logId"`
+	LogDateTim    int64          `json:"logDateTim"`
 	ExecuteResult *ExecuteResult `json:"executeResult"`
 }
 
@@ -32,12 +32,19 @@ type ExecuteResult struct {
 
 /*****************  下行参数  *********************/
 
+//阻塞处理策略
+const (
+	serialExecution = "SERIAL_EXECUTION" //单机串行
+	discardLater    = "DISCARD_LATER"    //丢弃后续调度
+	coverEarly      = "COVER_EARLY"      //覆盖之前调度
+)
+
 //触发任务请求参数
 type RunReq struct {
 	JobID                 int64  `json:"jobId"`                 // 任务ID
 	ExecutorHandler       string `json:"executorHandler"`       // 任务标识
 	ExecutorParams        string `json:"executorParams"`        // 任务参数
-	ExecutorBlockStrategy string `json:"executorBlockStrategy"` // 任务阻塞策略，可选值参考 com.xxl.job.core.enums.ExecutorBlockStrategyEnum
+	ExecutorBlockStrategy string `json:"executorBlockStrategy"` // 任务阻塞策略
 	ExecutorTimeout       int64  `json:"executorTimeout"`       // 任务超时时间，单位秒，大于零时生效
 	LogID                 int64  `json:"logId"`                 // 本次调度日志ID
 	LogDateTime           int64  `json:"logDateTime"`           // 本次调度日志时间

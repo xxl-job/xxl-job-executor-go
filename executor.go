@@ -96,17 +96,35 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	req, _ := ioutil.ReadAll(request.Body)
 	param := &RunReq{}
 	json.Unmarshal(req, &param)
+	log.Printf("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		writer.Write(returnCall(param, 500, "Task not registered"))
 		log.Println("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
 		return
 	}
+
 	task := e.regList.Get(param.ExecutorHandler)
 	task.Ext, task.Cancel = context.WithCancel(context.Background())
 	task.Id = param.JobID
 	task.Name = param.ExecutorHandler
 	task.Param = param
-	e.runList.Set(Int64ToStr(param.JobID), task)
+
+	//阻塞策略处理
+	if e.runList.Exists(Int64ToStr(task.Id)) {
+		if param.ExecutorBlockStrategy == coverEarly { //覆盖之前调度
+			oldTask := e.runList.Get(Int64ToStr(task.Id))
+			if oldTask != nil {
+				oldTask.Cancel()
+				e.runList.Del(Int64ToStr(task.Id))
+			}
+		} else { //单机串行,丢弃后续调度 都进行阻塞
+			writer.Write(returnCall(param, 500, "There are tasks running"))
+			log.Println("任务[" + Int64ToStr(param.JobID) + "]已经在运行了:" + param.ExecutorHandler)
+			return
+		}
+	}
+
+	e.runList.Set(Int64ToStr(task.Id), task)
 	go task.Run(func(code int64, msg string) {
 		e.callback(task, code, msg)
 	})
@@ -202,6 +220,7 @@ func (e *executor) callback(task *Task, code int64, msg string) {
 		fmt.Println(err)
 	}
 	body, err := ioutil.ReadAll(res.Body)
+	e.runList.Del(Int64ToStr(task.Id))
 	log.Println("任务回调成功:" + string(body))
 }
 
