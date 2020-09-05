@@ -3,6 +3,7 @@ package main
 import (
 	xxl "github.com/xxl-job/go-client"
 	"github.com/xxl-job/go-client/example/task"
+	"log"
 )
 
 func main() {
@@ -17,5 +18,5 @@ func main() {
 	exec.RegTask("task.test", task.Test)
 	exec.RegTask("task.test2", task.Test2)
 	exec.RegTask("task.panic", task.Panic)
-	exec.Run()
+	log.Fatal(exec.Run())
 }
