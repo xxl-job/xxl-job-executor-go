@@ -7,7 +7,7 @@ import (
 )
 
 //任务执行函数
-type TaskFunc func(cxt context.Context, param *RunReq)
+type TaskFunc func(cxt context.Context, param *RunReq) string
 
 //任务
 type Task struct {
@@ -23,7 +23,6 @@ type Task struct {
 
 //运行任务
 func (t *Task) Run(callback func(code int64, msg string)) {
-	t.Ext, t.Cancel = context.WithCancel(context.Background())
 	defer func(cancel func()) {
 		if err := recover(); err != nil {
 			log.Println(t.Info()+" panic: ", err)
@@ -31,8 +30,8 @@ func (t *Task) Run(callback func(code int64, msg string)) {
 			cancel()
 		}
 	}(t.Cancel)
-	t.fn(t.Ext, t.Param)
-	callback(200, "")
+	msg := t.fn(t.Ext, t.Param)
+	callback(200, msg)
 	return
 }
 

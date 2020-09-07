@@ -95,7 +95,12 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	defer e.mu.Unlock()
 	req, _ := ioutil.ReadAll(request.Body)
 	param := &RunReq{}
-	json.Unmarshal(req, &param)
+	err := json.Unmarshal(req, &param)
+	if err != nil {
+		writer.Write(returnCall(param, 500, "params err"))
+		log.Println("参数解析错误:" + string(req))
+		return
+	}
 	log.Printf("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		writer.Write(returnCall(param, 500, "Task not registered"))
@@ -138,7 +143,7 @@ func (e *executor) killTask(writer http.ResponseWriter, request *http.Request) {
 	defer e.mu.Unlock()
 	req, _ := ioutil.ReadAll(request.Body)
 	param := &killReq{}
-	json.Unmarshal(req, &param)
+	_ = json.Unmarshal(req, &param)
 	if !e.runList.Exists(Int64ToStr(param.JobID)) {
 		writer.Write(returnKill(param, 500))
 		log.Println("任务[" + Int64ToStr(param.JobID) + "]没有运行")
@@ -154,8 +159,7 @@ func (e *executor) killTask(writer http.ResponseWriter, request *http.Request) {
 func (e *executor) taskLog(writer http.ResponseWriter, request *http.Request) {
 	data, _ := ioutil.ReadAll(request.Body)
 	req := &logReq{}
-	json.Unmarshal(data, &req)
-
+	_ = json.Unmarshal(data, &req)
 	writer.Write(returnLog(req, 200))
 }
 
@@ -181,12 +185,12 @@ func (e *executor) registry() {
 		}
 		body, err := ioutil.ReadAll(result.Body)
 		res := &res{}
-		json.Unmarshal(body, &res)
+		_ = json.Unmarshal(body, &res)
 		if res.Code != 200 {
 			log.Println("执行器注册失败:" + string(body))
 		}
 		log.Println("执行器注册成功:" + string(body))
-		result.Body.Close()
+		_ = result.Body.Close()
 		t.Reset(time.Second * time.Duration(20)) //20秒心跳防止过期
 	}
 }
@@ -210,7 +214,7 @@ func (e *executor) registryRemove() {
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	log.Println("执行器摘除成功:" + string(body))
-	res.Body.Close()
+	_ = res.Body.Close()
 }
 
 //回调任务列表

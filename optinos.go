@@ -34,7 +34,6 @@ type Option func(o *Options)
 var (
 	DefaultExecutorPort = "9999"
 	DefaultRegistryKey  = "golang-jobs"
-	DefaultTimeOut      = 10 * time.Second
 )
 
 // 设置调度中心地址
@@ -48,13 +47,6 @@ func ServerAddr(addr string) Option {
 func AccessToken(token string) Option {
 	return func(o *Options) {
 		o.AccessToken = token
-	}
-}
-
-// 请求令牌
-func Timeout(timeout time.Duration) Option {
-	return func(o *Options) {
-		o.Timeout = timeout
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Test2(cxt context.Context, param *xxl.RunReq) {
+func Test2(cxt context.Context, param *xxl.RunReq) (msg string) {
 	num := 1
 	for {
 

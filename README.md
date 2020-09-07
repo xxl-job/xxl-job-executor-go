@@ -7,6 +7,7 @@
 3.任务注册，像写http.Handler一样方便
 4.任务panic处理
 5.阻塞策略处理
+6.任务完成支持返回执行备注
 ```
 
 ## Example
@@ -16,6 +17,7 @@ package main
 import (
 	xxl "github.com/xxl-job/go-client"
 	"github.com/xxl-job/go-client/example/task"
+	"log"
 )
 
 func main() {
@@ -29,9 +31,9 @@ func main() {
 	exec.Init()
 	exec.RegTask("task.test", task.Test)
 	exec.RegTask("task.test2", task.Test2)
-	exec.Run()
+	exec.RegTask("task.panic", task.Panic)
+	log.Fatal(exec.Run())
 }
-
 ```
 # see
 github.com/xxl-job/go-client/example/
