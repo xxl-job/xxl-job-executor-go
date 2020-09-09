@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"runtime/debug"
+	"runtime"
 )
 
 //任务执行函数
@@ -27,7 +27,8 @@ func (t *Task) Run(callback func(code int64, msg string)) {
 	defer func(cancel func()) {
 		if err := recover(); err != nil {
 			log.Println(t.Info()+" panic: ", err)
-			debug.PrintStack()	//堆栈跟踪
+			_, file, line, _ := runtime.Caller(2)
+			log.Printf("panic file %s:%d", file, line) //堆栈跟踪
 			callback(500, "task panic:"+fmt.Sprintf("%v", err))
 			cancel()
 		}
