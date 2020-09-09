@@ -107,9 +107,13 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		log.Println("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
 		return
 	}
-
+	cxt := context.Background()
 	task := e.regList.Get(param.ExecutorHandler)
-	task.Ext, task.Cancel = context.WithCancel(context.Background())
+	if param.ExecutorTimeout > 0 {
+		task.Ext, task.Cancel = context.WithTimeout(cxt, time.Duration(param.ExecutorTimeout)*time.Second)
+	} else {
+		task.Ext, task.Cancel = context.WithCancel(cxt)
+	}
 	task.Id = param.JobID
 	task.Name = param.ExecutorHandler
 	task.Param = param
