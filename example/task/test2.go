@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
-	xxl "github.com/xxl-job/go-client"
+	xxl "github.com/xxl-job/xxl-job-executor-go"
 	"time"
 )
 

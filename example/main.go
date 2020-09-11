@@ -1,8 +1,8 @@
 package main
 
 import (
-	xxl "github.com/xxl-job/go-client"
-	"github.com/xxl-job/go-client/example/task"
+	xxl "github.com/xxl-job/xxl-job-executor-go"
+	"github.com/xxl-job/xxl-job-executor-go/example/task"
 	"log"
 )
 

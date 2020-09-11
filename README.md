@@ -1,5 +1,5 @@
-# xxl-job go-client
-很多公司java与go开发共存，java中有xxl-job做为任务调度引擎，为此也出现了go客户端，使用起来比较简单：
+# xxl-job-executor-go
+很多公司java与go开发共存，java中有xxl-job做为任务调度引擎，为此也出现了go执行器(客户端)，使用起来比较简单：
 # 支持
 ```	
 1.执行器注册
@@ -18,8 +18,8 @@
 package main
 
 import (
-	xxl "github.com/xxl-job/go-client"
-	"github.com/xxl-job/go-client/example/task"
+	xxl "github.com/xxl-job/xxl-job-executor-go"
+	"github.com/xxl-job/xxl-job-executor-go/example/task"
 	"log"
 )
 
@@ -39,4 +39,4 @@ func main() {
 }
 ```
 # see
-github.com/xxl-job/go-client/example/
+github.com/xxl-job/xxl-job-executor-go/example/
