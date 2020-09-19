@@ -72,7 +72,7 @@ func (e *executor) Run() (err error) {
 		Handler:      mux,
 	}
 	// 监听端口并提供服务
-	log.Println("Starting server at " + e.address)
+	fmt.Println("Starting server at " + e.address)
 	go server.ListenAndServe()
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
@@ -101,7 +101,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		log.Println("参数解析错误:" + string(req))
 		return
 	}
-	log.Printf("任务参数:%v", param)
+	fmt.Printf("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		writer.Write(returnCall(param, 500, "Task not registered"))
 		log.Println("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
@@ -137,7 +137,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	go task.Run(func(code int64, msg string) {
 		e.callback(task, code, msg)
 	})
-	log.Println("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
+	fmt.Println("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
 	writer.Write(returnGeneral())
 }
 
@@ -183,19 +183,28 @@ func (e *executor) registry() {
 	}
 	for {
 		<-t.C
-		result, err := e.post("/api/registry", string(param))
-		if err != nil {
-			log.Println("执行器注册失败:" + err.Error())
-		}
-		body, err := ioutil.ReadAll(result.Body)
-		res := &res{}
-		_ = json.Unmarshal(body, &res)
-		if res.Code != 200 {
-			log.Println("执行器注册失败:" + string(body))
-		}
-		log.Println("执行器注册成功:" + string(body))
-		_ = result.Body.Close()
 		t.Reset(time.Second * time.Duration(20)) //20秒心跳防止过期
+		func() {
+			result, err := e.post("/api/registry", string(param))
+			if err != nil {
+				log.Println("执行器注册失败1:" + err.Error())
+				return
+			}
+			defer result.Body.Close()
+			body, err := ioutil.ReadAll(result.Body)
+			if err != nil {
+				log.Println("执行器注册失败2:" + err.Error())
+				return
+			}
+			res := &res{}
+			_ = json.Unmarshal(body, &res)
+			if res.Code != 200 {
+				log.Println("执行器注册失败3:" + string(body))
+				return
+			}
+			fmt.Println("执行器注册成功:" + string(body))
+		}()
+
 	}
 }
 
@@ -217,7 +226,7 @@ func (e *executor) registryRemove() {
 		log.Println("执行器摘除失败:" + err.Error())
 	}
 	body, err := ioutil.ReadAll(res.Body)
-	log.Println("执行器摘除成功:" + string(body))
+	fmt.Println("执行器摘除成功:" + string(body))
 	_ = res.Body.Close()
 }
 
@@ -229,7 +238,7 @@ func (e *executor) callback(task *Task, code int64, msg string) {
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	e.runList.Del(Int64ToStr(task.Id))
-	log.Println("任务回调成功:" + string(body))
+	fmt.Println("任务回调成功:" + string(body))
 }
 
 //post
