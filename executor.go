@@ -248,7 +248,7 @@ func (e *executor) post(action, body string) (resp *http.Response, err error) {
 		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json;charset=UTF-8")
-	request.Header.Set("XXL-RPC-ACCESS-TOKEN", e.opts.AccessToken)
+	request.Header.Set("XXL-JOB-ACCESS-TOKEN", e.opts.AccessToken)
 	client := http.Client{
 		Timeout: e.opts.Timeout,
 	}
