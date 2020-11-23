@@ -22,10 +22,8 @@ func returnCall(req *RunReq, code int64, msg string) []byte {
 		&callElement{
 			LogID:      req.LogID,
 			LogDateTim: req.LogDateTime,
-			ExecuteResult: &ExecuteResult{
-				Code: code,
-				Msg:  msg,
-			},
+			HandleCode: code,
+			HandleMsg: msg,
 		},
 	}
 	str, _ := json.Marshal(data)

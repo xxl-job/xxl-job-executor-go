@@ -21,17 +21,12 @@ type call []*callElement
 type callElement struct {
 	LogID         int64          `json:"logId"`
 	LogDateTim    int64          `json:"logDateTim"`
-	ExecuteResult *ExecuteResult `json:"executeResult"`
-}
-
-//任务执行结果 200 表示任务执行正常，500表示失败
-type ExecuteResult struct {
-	Code int64       `json:"code"`
-	Msg  interface{} `json:"msg"`
+	// 200 表示任务执行正常，500表示失败
+	HandleCode    int64          `json:"handleCode"`
+	HandleMsg     string         `json:"handleMsg"`
 }
 
 /*****************  下行参数  *********************/
-
 //阻塞处理策略
 const (
 	serialExecution = "SERIAL_EXECUTION" //单机串行
