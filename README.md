@@ -13,7 +13,7 @@
 9.日志查看（未完成）
 ```
 
-## Example
+# Example
 ```
 package main
 
@@ -40,3 +40,19 @@ func main() {
 ```
 # see
 github.com/xxl-job/xxl-job-executor-go/example/
+# xxl-job-admin配置
+### 添加执行器
+执行器管理->新增执行器,执行器列表如下：
+```
+AppName		名称		注册方式	OnLine 		机器地址	操作
+golang-jobs	golang执行器	自动注册	无
+```
+
+### 添加任务
+任务管理->新增(注意，使用BEAN模式，JobHandler与RegTask名称一致)
+```
+1	测试panic	BEAN：task.panic	* 0 * * * ?	admin	STOP	
+2	测试耗时任务	BEAN：task.test2	* * * * * ?	admin	STOP	
+3	测试golang	BEAN：task.test		* * * * * ?	admin	STOP
+```
+
