@@ -10,7 +10,7 @@
 6.任务完成支持返回执行备注
 7.任务超时取消 (单位：秒，0为不限制)
 8.失败重试次数(在参数param中，目前由任务自行处理)
-9.可自定义日志输出
+9.可自定义日志
 10.自定义日志查看handler
 ```
 
@@ -19,6 +19,7 @@
 package main
 
 import (
+	"fmt"
 	xxl "github.com/xxl-job/xxl-job-executor-go"
 	"github.com/xxl-job/xxl-job-executor-go/example/task"
 	"log"
@@ -27,10 +28,11 @@ import (
 func main() {
 	exec := xxl.NewExecutor(
 		xxl.ServerAddr("http://127.0.0.1/xxl-job-admin"),
-		xxl.AccessToken(""),         //请求令牌(默认为空)
-		xxl.ExecutorIp("127.0.0.1"), //可自动获取
-		xxl.ExecutorPort("9999"),    //默认9999（非必填）
-		xxl.RegistryKey("golang-jobs"),
+		xxl.AccessToken(""),            //请求令牌(默认为空)
+		xxl.ExecutorIp("127.0.0.1"),    //可自动获取
+		xxl.ExecutorPort("9999"),       //默认9999（非必填）
+		xxl.RegistryKey("golang-jobs"), //执行器名称
+		xxl.SetLogger(&logger{}),       //自定义日志
 	)
 	exec.Init()
 	//设置日志查看handler
@@ -47,6 +49,17 @@ func main() {
 	exec.RegTask("task.test2", task.Test2)
 	exec.RegTask("task.panic", task.Panic)
 	log.Fatal(exec.Run())
+}
+
+//xxl.Logger接口实现
+type logger struct{}
+
+func (l *logger) Info(format string, a ...interface{}) {
+	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))
+}
+
+func (l *logger) Error(format string, a ...interface{}) {
+	log.Println(fmt.Sprintf("自定义日志 - "+format, a...))
 }
 ```
 # see
