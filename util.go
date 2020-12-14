@@ -46,22 +46,7 @@ func returnKill(req *killReq, code int64) []byte {
 	return str
 }
 
-//日志返回
-func returnLog(req *logReq, code int64) []byte {
-	msg := "nil"
-	if code != 200 {
-		msg = "log err"
-	}
-	data := &logRes{Code: code, Msg: msg, Content: logResContent{
-		FromLineNum: req.FromLineNum,
-		ToLineNum:   0,
-		LogContent:  "Please view the log server",
-		//IsEnd:       line < 5,
-		IsEnd: true,
-	}}
-	str, _ := json.Marshal(data)
-	return str
-}
+
 
 //通用返回
 func returnGeneral() []byte {

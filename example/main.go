@@ -15,6 +15,16 @@ func main() {
 		xxl.RegistryKey("golang-jobs"),
 	)
 	exec.Init()
+	//设置日志查看handler
+	exec.LogHandler(func(req *xxl.LogReq) *xxl.LogRes {
+		return &xxl.LogRes{Code: 200, Msg: "", Content: xxl.LogResContent{
+			FromLineNum: req.FromLineNum,
+			ToLineNum:   2,
+			LogContent:  "这个是自定义日志handler",
+			IsEnd:       true,
+		}}
+	})
+	//注册任务handler
 	exec.RegTask("task.test", task.Test)
 	exec.RegTask("task.test2", task.Test2)
 	exec.RegTask("task.panic", task.Panic)

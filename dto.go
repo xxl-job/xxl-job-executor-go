@@ -61,21 +61,21 @@ type killReq struct {
 }
 
 //日志请求
-type logReq struct {
+type LogReq struct {
 	LogDateTim  int64 `json:"logDateTim"`  // 本次调度日志时间
 	LogID       int64 `json:"logId"`       // 本次调度日志ID
 	FromLineNum int   `json:"fromLineNum"` // 日志开始行号，滚动加载日志
 }
 
 //日志响应
-type logRes struct {
+type LogRes struct {
 	Code    int64         `json:"code"`    // 200 表示正常、其他失败
 	Msg     string        `json:"msg"`     // 错误提示消息
-	Content logResContent `json:"content"` // 日志响应内容
+	Content LogResContent `json:"content"` // 日志响应内容
 }
 
 //日志响应内容
-type logResContent struct {
+type LogResContent struct {
 	FromLineNum int    `json:"fromLineNum"` // 本次请求，日志开始行数
 	ToLineNum   int    `json:"toLineNum"`   // 本次请求，日志结束行号
 	LogContent  string `json:"logContent"`  // 本次请求日志内容

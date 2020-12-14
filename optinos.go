@@ -13,6 +13,8 @@ type Options struct {
 	ExecutorPort string        `json:"executor_port"` //本地(执行器)端口
 	RegistryKey  string        `json:"registry_key"`  //执行器名称
 	LogDir       string        `json:"log_dir"`       //日志目录
+
+	l Logger //日志处理
 }
 
 func newOptions(opts ...Option) Options {
@@ -24,6 +26,10 @@ func newOptions(opts ...Option) Options {
 
 	for _, o := range opts {
 		o(&opt)
+	}
+
+	if opt.l == nil {
+		opt.l = &logger{}
 	}
 
 	return opt
@@ -68,5 +74,12 @@ func ExecutorPort(port string) Option {
 func RegistryKey(registryKey string) Option {
 	return func(o *Options) {
 		o.RegistryKey = registryKey
+	}
+}
+
+// 设置日志处理器
+func SetLogger(l Logger) Option {
+	return func(o *Options) {
+		o.l = l
 	}
 }

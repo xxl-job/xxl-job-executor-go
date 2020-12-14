@@ -10,7 +10,8 @@
 6.任务完成支持返回执行备注
 7.任务超时取消 (单位：秒，0为不限制)
 8.失败重试次数(在参数param中，目前由任务自行处理)
-9.日志查看（未完成）
+9.可自定义日志输出
+10.自定义日志查看handler
 ```
 
 # Example
@@ -32,6 +33,16 @@ func main() {
 		xxl.RegistryKey("golang-jobs"),
 	)
 	exec.Init()
+	//设置日志查看handler
+	exec.LogHandler(func(req *xxl.LogReq) *xxl.LogRes {
+		return &xxl.LogRes{Code: 200, Msg: "", Content: xxl.LogResContent{
+			FromLineNum: req.FromLineNum,
+			ToLineNum:   2,
+			LogContent:  "这个是自定义日志handler",
+			IsEnd:       true,
+		}}
+	})
+	//注册任务handler
 	exec.RegTask("task.test", task.Test)
 	exec.RegTask("task.test2", task.Test2)
 	exec.RegTask("task.panic", task.Panic)
