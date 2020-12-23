@@ -12,6 +12,7 @@
 8.失败重试次数(在参数param中，目前由任务自行处理)
 9.可自定义日志
 10.自定义日志查看handler
+11.支持外部路由（可与gin集成）
 ```
 
 # Example
@@ -62,8 +63,10 @@ func (l *logger) Error(format string, a ...interface{}) {
 	log.Println(fmt.Sprintf("自定义日志 - "+format, a...))
 }
 ```
-# see
+# 示例项目
 github.com/xxl-job/xxl-job-executor-go/example/
+# 与gin框架集成
+https://github.com/gin-middleware/xxl-job-executor
 # xxl-job-admin配置
 ### 添加执行器
 执行器管理->新增执行器,执行器列表如下：

@@ -22,6 +22,13 @@ type Executor interface {
 	LogHandler(handler LogHandler)
 	//注册任务
 	RegTask(pattern string, task TaskFunc)
+	//运行任务
+	RunTask(writer http.ResponseWriter, request *http.Request)
+	//杀死任务
+	KillTask(writer http.ResponseWriter, request *http.Request)
+	//任务日志
+	TaskLog(writer http.ResponseWriter, request *http.Request)
+	//运行服务
 	Run() error
 }
 
@@ -286,4 +293,19 @@ func (e *executor) post(action, body string) (resp *http.Response, err error) {
 		Timeout: e.opts.Timeout,
 	}
 	return client.Do(request)
+}
+
+//runTask
+func (e *executor) RunTask(writer http.ResponseWriter, request *http.Request) {
+	e.runTask(writer, request)
+}
+
+//killTask
+func (e *executor) KillTask(writer http.ResponseWriter, request *http.Request) {
+	e.killTask(writer, request)
+}
+
+//taskLog
+func (e *executor) TaskLog(writer http.ResponseWriter, request *http.Request) {
+	e.taskLog(writer, request)
 }
