@@ -3,7 +3,6 @@ package xxl
 import (
 	"context"
 	"fmt"
-	"log"
 	"runtime/debug"
 )
 
@@ -20,13 +19,15 @@ type Task struct {
 	Cancel    context.CancelFunc
 	StartTime int64
 	EndTime   int64
+	//日志
+	log Logger
 }
 
 //运行任务
 func (t *Task) Run(callback func(code int64, msg string)) {
 	defer func(cancel func()) {
 		if err := recover(); err != nil {
-			log.Println(t.Info()+" panic: ", err)
+			t.log.Info(t.Info()+" panic: %v", err)
 			debug.PrintStack() //堆栈跟踪
 			callback(500, "task panic:"+fmt.Sprintf("%v", err))
 			cancel()

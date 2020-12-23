@@ -3,7 +3,6 @@ package xxl
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -113,7 +112,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
-	fmt.Printf("任务参数:%v", param)
+	e.log.Info("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		_, _ = writer.Write(returnCall(param, 500, "Task not registered"))
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
@@ -129,6 +128,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	task.Id = param.JobID
 	task.Name = param.ExecutorHandler
 	task.Param = param
+	task.log = e.log
 
 	//阻塞策略处理
 	if e.runList.Exists(Int64ToStr(task.Id)) {
