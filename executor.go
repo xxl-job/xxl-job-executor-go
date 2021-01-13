@@ -125,6 +125,22 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
 		return
 	}
+
+	//阻塞策略处理
+	if e.runList.Exists(Int64ToStr(param.JobID)) {
+		if param.ExecutorBlockStrategy == coverEarly { //覆盖之前调度
+			oldTask := e.runList.Get(Int64ToStr(param.JobID))
+			if oldTask != nil {
+				oldTask.Cancel()
+				e.runList.Del(Int64ToStr(oldTask.Id))
+			}
+		} else { //单机串行,丢弃后续调度 都进行阻塞
+			_, _ = writer.Write(returnCall(param, 500, "There are tasks running"))
+			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]已经在运行了:" + param.ExecutorHandler)
+			return
+		}
+	}
+
 	cxt := context.Background()
 	task := e.regList.Get(param.ExecutorHandler)
 	if param.ExecutorTimeout > 0 {
@@ -136,21 +152,6 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	task.Name = param.ExecutorHandler
 	task.Param = param
 	task.log = e.log
-
-	//阻塞策略处理
-	if e.runList.Exists(Int64ToStr(task.Id)) {
-		if param.ExecutorBlockStrategy == coverEarly { //覆盖之前调度
-			oldTask := e.runList.Get(Int64ToStr(task.Id))
-			if oldTask != nil {
-				oldTask.Cancel()
-				e.runList.Del(Int64ToStr(task.Id))
-			}
-		} else { //单机串行,丢弃后续调度 都进行阻塞
-			_, _ = writer.Write(returnCall(param, 500, "There are tasks running"))
-			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]已经在运行了:" + param.ExecutorHandler)
-			return
-		}
-	}
 
 	e.runList.Set(Int64ToStr(task.Id), task)
 	go task.Run(func(code int64, msg string) {
