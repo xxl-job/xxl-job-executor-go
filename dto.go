@@ -54,6 +54,14 @@ type RunReq struct {
 	BroadcastIndex        int64  `json:"broadcastIndex"`        // 分片参数：当前分片
 	BroadcastTotal        int64  `json:"broadcastTotal"`        // 分片参数：总分片
 }
+// Regulate 合规化其中的参数,包括 1. 所有字符串去除空白
+func (r *RunReq) Regulate() {
+	r.ExecutorHandler=strings.Trimspace(r.ExecutorHandler)
+	r.ExecutorParams=strings.Trimspace(r.ExecutorParams)
+	r.ExecutorBlockStrategy=strings.Trimspace(r.ExecutorBlockStrategy)
+	r.GlueType=strings.Trimspace(r.GlueType)
+	r.GlueSource=strings.Trimspace(r.GlueSource)
+}
 
 //终止任务请求参数
 type killReq struct {
