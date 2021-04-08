@@ -71,10 +71,13 @@ https://github.com/gin-middleware/xxl-job-executor
 ### 添加执行器
 执行器管理->新增执行器,执行器列表如下：
 ```
-AppName		名称		注册方式	OnLine 		机器地址	操作
-golang-jobs	golang执行器	自动注册	无
+AppName		名称		注册方式	OnLine 		机器地址 		操作
+golang-jobs	golang执行器	自动注册 		查看 ( 1 ）   
 ```
-
+查看->注册节点
+```
+http://127.0.0.1:9999
+```
 ### 添加任务
 任务管理->新增(注意，使用BEAN模式，JobHandler与RegTask名称一致)
 ```
