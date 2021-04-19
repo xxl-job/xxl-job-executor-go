@@ -36,10 +36,10 @@ func main() {
 //xxl.Logger接口实现
 type logger struct{}
 
-func (l *logger) Info(format string, a ...interface{}) {
+func (l *logger) Infof(format string, a ...interface{}) {
 	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))
 }
 
-func (l *logger) Error(format string, a ...interface{}) {
+func (l *logger) Errorf(format string, a ...interface{}) {
 	log.Println(fmt.Sprintf("自定义日志 - "+format, a...))
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -90,12 +89,12 @@ func (e *executor) Run() (err error) {
 		Handler:      mux,
 	}
 	// 监听端口并提供服务
-	e.log.Info("Starting server at " + e.address)
+	e.log.Infof("Starting server at " + e.address)
 	go server.ListenAndServe()
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	e.registryRemove()
+	e.RegistryRemove()
 	return nil
 }
 
@@ -104,7 +103,6 @@ func (e *executor) RegTask(pattern string, task TaskFunc) {
 	var t = &Task{}
 	t.fn = task
 	e.regList.Set(pattern, t)
-	return
 }
 
 //运行一个任务
@@ -116,13 +114,13 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	err := json.Unmarshal(req, &param)
 	if err != nil {
 		_, _ = writer.Write(returnCall(param, 500, "params err"))
-		e.log.Error("参数解析错误:" + string(req))
+		e.log.Errorf("task params parse failure params:%s error:%s",string(req), err.Error())
 		return
 	}
-	e.log.Info("任务参数:%v", param)
+	e.log.Infof("task params:%+v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		_, _ = writer.Write(returnCall(param, 500, "Task not registered"))
-		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
+		e.log.Errorf("task [%d] (%s) is not be registered yet", param.JobID, param.ExecutorHandler)
 		return
 	}
 
@@ -136,7 +134,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 			}
 		} else { //单机串行,丢弃后续调度 都进行阻塞
 			_, _ = writer.Write(returnCall(param, 500, "There are tasks running"))
-			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]已经在运行了:" + param.ExecutorHandler)
+			e.log.Errorf("task[%s](%x) is running" ,param.JobID, param.ExecutorHandler)
 			return
 		}
 	}
@@ -157,7 +155,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	go task.Run(func(code int64, msg string) {
 		e.callback(task, code, msg)
 	})
-	e.log.Info("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
+	e.log.Infof("task [%d] (%s) to be running:",param.JobID, param.ExecutorHandler)
 	_, _ = writer.Write(returnGeneral())
 }
 
@@ -170,7 +168,7 @@ func (e *executor) killTask(writer http.ResponseWriter, request *http.Request) {
 	_ = json.Unmarshal(req, &param)
 	if !e.runList.Exists(Int64ToStr(param.JobID)) {
 		_, _ = writer.Write(returnKill(param, 500))
-		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有运行")
+		e.log.Errorf("task [%d] is not running", param.JobID)
 		return
 	}
 	task := e.runList.Get(Int64ToStr(param.JobID))
@@ -185,17 +183,17 @@ func (e *executor) taskLog(writer http.ResponseWriter, request *http.Request) {
 	data, err := ioutil.ReadAll(request.Body)
 	req := &LogReq{}
 	if err != nil {
-		e.log.Error("日志请求失败:" + err.Error())
+		e.log.Errorf("request log failure error:%s", err.Error())
 		reqErrLogHandler(writer, req, err)
 		return
 	}
 	err = json.Unmarshal(data, &req)
 	if err != nil {
-		e.log.Error("日志请求解析失败:" + err.Error())
+		e.log.Errorf("request log json unmarshal failure error:%s", err.Error())
 		reqErrLogHandler(writer, req, err)
 		return
 	}
-	e.log.Info("日志请求参数:%+v", req)
+	e.log.Infof("request log params:%+v", req)
 	if e.logHandler != nil {
 		res = e.logHandler(req)
 	} else {
@@ -217,7 +215,7 @@ func (e *executor) registry() {
 	}
 	param, err := json.Marshal(req)
 	if err != nil {
-		log.Fatal("执行器注册信息解析失败:" + err.Error())
+		e.log.Fatalf("registry json unmarshal failure error:%s:", err.Error())
 	}
 	for {
 		<-t.C
@@ -225,29 +223,32 @@ func (e *executor) registry() {
 		func() {
 			result, err := e.post("/api/registry", string(param))
 			if err != nil {
-				e.log.Error("执行器注册失败1:" + err.Error())
+				e.log.Errorf("request /api/registry post failure error:%s", err.Error())
 				return
 			}
 			defer result.Body.Close()
 			body, err := ioutil.ReadAll(result.Body)
 			if err != nil {
-				e.log.Error("执行器注册失败2:" + err.Error())
+				e.log.Errorf("request /api/registry read body failure error:%s:",  err.Error())
 				return
 			}
 			res := &res{}
-			_ = json.Unmarshal(body, &res)
-			if res.Code != 200 {
-				e.log.Error("执行器注册失败3:" + string(body))
+			err = json.Unmarshal(body, &res)
+			if err != nil {
+				e.log.Errorf("request /api/registry json unmarshal failure error:%s:",  err.Error())
 				return
 			}
-			e.log.Info("执行器注册成功:" + string(body))
+			if res.Code != 200 {
+				e.log.Errorf("request /api/registry response failure response:%+v:",  res)
+				return
+			}
+			e.log.Infof("request /api/registry success response:%+v",res)
 		}()
-
 	}
 }
 
 //执行器注册摘除
-func (e *executor) registryRemove() {
+func (e *executor) RegistryRemove() {
 	t := time.NewTimer(time.Second * 0) //初始立即执行
 	defer t.Stop()
 	req := &Registry{
@@ -257,14 +258,17 @@ func (e *executor) registryRemove() {
 	}
 	param, err := json.Marshal(req)
 	if err != nil {
-		e.log.Error("执行器摘除失败:" + err.Error())
+		e.log.Errorf("RegistryRemove json marshal error:%s", err.Error())
 	}
-	res, err := e.post("/api/registryRemove", string(param))
+	res, err := e.post("/api/RegistryRemove", string(param))
 	if err != nil {
-		e.log.Error("执行器摘除失败:" + err.Error())
+		e.log.Errorf("request /api/RegistryRemove post failure error:%s", err.Error())
 	}
 	body, err := ioutil.ReadAll(res.Body)
-	e.log.Info("执行器摘除成功:" + string(body))
+	if err != nil {
+		e.log.Errorf("request /api/RegistryRemove read body failure error:%s", err.Error())
+	}
+	e.log.Infof("request /api/RegistryRemove success response:%s", string(body))
 	_ = res.Body.Close()
 }
 
@@ -272,14 +276,14 @@ func (e *executor) registryRemove() {
 func (e *executor) callback(task *Task, code int64, msg string) {
 	res, err := e.post("/api/callback", string(returnCall(task.Param, code, msg)))
 	if err != nil {
-		e.log.Error("callback err : ", err.Error())
+		e.log.Errorf("callback err : ", err.Error())
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		e.log.Error("callback ReadAll err : ", err.Error())
+		e.log.Errorf("callback ReadAll err:%s ", err.Error())
 	}
 	e.runList.Del(Int64ToStr(task.Id))
-	e.log.Info("任务回调成功:" + string(body))
+	e.log.Infof("task[%d] callback success response:%s", task.Id, string(body))
 }
 
 //post
