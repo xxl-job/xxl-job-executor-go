@@ -15,7 +15,7 @@
 11.支持外部路由（可与gin集成）
 ```
 
-# Example1 （Option）
+# Example1
 ```
 import (
 	"fmt"
