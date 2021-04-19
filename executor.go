@@ -272,7 +272,7 @@ func (e *executor) RegistryRemove() {
 	if err != nil {
 		e.log.Errorf("RegistryRemove json marshal error:%s", err.Error())
 	}
-	res, err := e.post("/api/RegistryRemove", string(param))
+	res, err := e.post("/api/registryRemove", string(param))
 	if err != nil {
 		e.log.Errorf("request /api/RegistryRemove post failure error:%s", err.Error())
 	}
