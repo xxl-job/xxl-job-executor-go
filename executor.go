@@ -30,6 +30,8 @@ type Executor interface {
 	TaskLog(writer http.ResponseWriter, request *http.Request)
 	//运行服务
 	Run() error
+	//停止服务
+	Stop()
 }
 
 //创建执行器
@@ -95,8 +97,12 @@ func (e *executor) Run() (err error) {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	e.RegistryRemove()
+	e.registryRemove()
 	return nil
+}
+
+func (e *executor) Stop() {
+	e.registryRemove()
 }
 
 //注册任务
@@ -247,7 +253,7 @@ func (e *executor) registry() {
 }
 
 //执行器注册摘除
-func (e *executor) RegistryRemove() {
+func (e *executor) registryRemove() {
 	t := time.NewTimer(time.Second * 0) //初始立即执行
 	defer t.Stop()
 	req := &Registry{
