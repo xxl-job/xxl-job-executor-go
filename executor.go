@@ -31,6 +31,8 @@ type Executor interface {
 	SetLogger(log Logger)
 	//运行服务
 	Run() error
+	//摘除 xxljob
+	RegistryRemove()
 }
 
 //创建执行器
