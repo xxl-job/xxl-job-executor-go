@@ -27,11 +27,21 @@ type Executor interface {
 	KillTask(writer http.ResponseWriter, request *http.Request)
 	//任务日志
 	TaskLog(writer http.ResponseWriter, request *http.Request)
+	//logger
+	SetLogger(log Logger)
 	//运行服务
 	Run() error
 }
 
 //创建执行器
+func New(c Conf) Executor {
+	opts := newOptionsFromConf(c)
+	executor := &executor{
+		opts: opts,
+	}
+	return executor
+}
+
 func NewExecutor(opts ...Option) Executor {
 	return newExecutor(opts...)
 }
@@ -313,4 +323,9 @@ func (e *executor) KillTask(writer http.ResponseWriter, request *http.Request) {
 //taskLog
 func (e *executor) TaskLog(writer http.ResponseWriter, request *http.Request) {
 	e.taskLog(writer, request)
+}
+
+//taskLog
+func (e *executor) SetLogger(log Logger) {
+	e.log = log
 }

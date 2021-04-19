@@ -17,6 +17,28 @@ type Options struct {
 	l Logger //日志处理
 }
 
+func newOptionsFromConf(c Conf) Options {
+	opt := Options{
+		ExecutorIp:   ipv4.LocalIP(),
+		ExecutorPort: DefaultExecutorPort,
+		RegistryKey:  DefaultRegistryKey,
+	}
+	if c.ServerAddr != "" {
+		opt.ServerAddr = c.ServerAddr
+	}
+	if c.RegistryKey != "" {
+		opt.RegistryKey = c.RegistryKey
+	}
+	if c.ExecutorPort != "" {
+		opt.ExecutorPort = c.ExecutorPort
+	}
+	if c.AccessToken != "" {
+		opt.AccessToken = c.AccessToken
+	}
+
+	return opt
+}
+
 func newOptions(opts ...Option) Options {
 	opt := Options{
 		ExecutorIp:   ipv4.LocalIP(),
