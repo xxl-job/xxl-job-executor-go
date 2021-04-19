@@ -15,10 +15,8 @@
 11.支持外部路由（可与gin集成）
 ```
 
-# Example
+# Example1 （Option）
 ```
-package main
-
 import (
 	"fmt"
 	xxl "github.com/xxl-job/xxl-job-executor-go"
@@ -26,8 +24,9 @@ import (
 	"log"
 )
 
-func main() {
-	exec := xxl.NewExecutor(
+// Option style
+func initViaOption() xxl.Executor{
+	return xxl.NewExecutor(
 		xxl.ServerAddr("http://127.0.0.1/xxl-job-admin"),
 		xxl.AccessToken(""),            //请求令牌(默认为空)
 		xxl.ExecutorIp("127.0.0.1"),    //可自动获取
@@ -35,6 +34,21 @@ func main() {
 		xxl.RegistryKey("golang-jobs"), //执行器名称
 		xxl.SetLogger(&logger{}),       //自定义日志
 	)
+}
+// Config style
+func initViaConfig() xxl.Executor{
+	c := xxl.Conf{
+		ServerAddr:   "http://127.0.0.1/xxl-job-admin",
+		ExecutorPort: "9999",
+		RegistryKey:  "golang-jobs",
+		AccessToken:  "",
+	}
+	return xxl.New(c)
+}
+
+func main() {
+	exec := initViaConfig()
+	exec.SetLogger(&logger{})
 	exec.Init()
 	//设置日志查看handler
 	exec.LogHandler(func(req *xxl.LogReq) *xxl.LogRes {
@@ -55,14 +69,20 @@ func main() {
 //xxl.Logger接口实现
 type logger struct{}
 
-func (l *logger) Info(format string, a ...interface{}) {
+func (l *logger) Fatalf(format string, a ...interface{}) {
+	panic("implement me")
+}
+
+func (l *logger) Infof(format string, a ...interface{}) {
 	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))
 }
 
-func (l *logger) Error(format string, a ...interface{}) {
+func (l *logger) Errorf(format string, a ...interface{}) {
 	log.Println(fmt.Sprintf("自定义日志 - "+format, a...))
 }
+
 ```
+
 # 示例项目
 github.com/xxl-job/xxl-job-executor-go/example/
 # 与gin框架集成

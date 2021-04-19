@@ -328,4 +328,5 @@ func (e *executor) TaskLog(writer http.ResponseWriter, request *http.Request) {
 //taskLog
 func (e *executor) SetLogger(log Logger) {
 	e.log = log
+	e.opts.l = log
 }

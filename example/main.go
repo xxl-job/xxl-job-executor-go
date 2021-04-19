@@ -7,8 +7,9 @@ import (
 	"log"
 )
 
-func main() {
-	exec := xxl.NewExecutor(
+// Option
+func initViaOption() xxl.Executor{
+	return xxl.NewExecutor(
 		xxl.ServerAddr("http://127.0.0.1/xxl-job-admin"),
 		xxl.AccessToken(""),            //请求令牌(默认为空)
 		xxl.ExecutorIp("127.0.0.1"),    //可自动获取
@@ -16,6 +17,21 @@ func main() {
 		xxl.RegistryKey("golang-jobs"), //执行器名称
 		xxl.SetLogger(&logger{}),       //自定义日志
 	)
+}
+// Config
+func initViaConfig() xxl.Executor{
+	c := xxl.Conf{
+		ServerAddr:   "http://127.0.0.1/xxl-job-admin",
+		ExecutorPort: "9999",
+		RegistryKey:  "golang-jobs",
+		AccessToken:  "",
+	}
+	return xxl.New(c)
+}
+
+func main() {
+	exec := initViaConfig()
+	exec.SetLogger(&logger{})
 	exec.Init()
 	//设置日志查看handler
 	exec.LogHandler(func(req *xxl.LogReq) *xxl.LogRes {
