@@ -95,7 +95,7 @@ func (e *executor) Run() (err error) {
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	e.registryRemove()
+	e.RegistryRemove()
 	return nil
 }
 
@@ -247,7 +247,7 @@ func (e *executor) registry() {
 }
 
 //执行器注册摘除
-func (e *executor) registryRemove() {
+func (e *executor) RegistryRemove() {
 	t := time.NewTimer(time.Second * 0) //初始立即执行
 	defer t.Stop()
 	req := &Registry{
