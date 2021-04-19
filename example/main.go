@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	xxl "github.com/xxl-job/xxl-job-executor-go"
-	"github.com/xxl-job/xxl-job-executor-go/example/task"
+	xxl "github.com/ainiaa/xxl-job-executor-go"
+	"github.com/ainiaa/xxl-job-executor-go/example/task"
 	"log"
 )
 

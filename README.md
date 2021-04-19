@@ -15,12 +15,12 @@
 11.支持外部路由（可与gin集成）
 ```
 
-# Example1
+# Example
 ```
 import (
 	"fmt"
-	xxl "github.com/xxl-job/xxl-job-executor-go"
-	"github.com/xxl-job/xxl-job-executor-go/example/task"
+	xxl "github.com/ainiaa/xxl-job-executor-go"
+	"github.com/ainiaa/xxl-job-executor-go/example/task"
 	"log"
 )
 
@@ -84,9 +84,9 @@ func (l *logger) Errorf(format string, a ...interface{}) {
 ```
 
 # 示例项目
-github.com/xxl-job/xxl-job-executor-go/example/
+github.com/ainiaa/xxl-job-executor-go/example/
 # 与gin框架集成
-https://github.com/gin-middleware/xxl-job-executor
+https://github.com/ainiaa/gin-xxl-job-executor
 # xxl-job-admin配置
 ### 添加执行器
 执行器管理->新增执行器,执行器列表如下：
