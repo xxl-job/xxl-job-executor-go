@@ -86,7 +86,7 @@ func (e *executor) Run() (err error) {
 	mux.HandleFunc("/kill", e.killTask)
 	mux.HandleFunc("/log", e.taskLog)
 	mux.HandleFunc("/beat", e.beat)
-	mux.HandleFunc("/idleBeat", e.beat)
+	mux.HandleFunc("/idleBeat", e.idleBeat)
 	// 创建服务器
 	server := &http.Server{
 		Addr:         e.address,
