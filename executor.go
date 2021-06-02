@@ -85,6 +85,8 @@ func (e *executor) Run() (err error) {
 	mux.HandleFunc("/run", e.runTask)
 	mux.HandleFunc("/kill", e.killTask)
 	mux.HandleFunc("/log", e.taskLog)
+	mux.HandleFunc("/beat", e.beat)
+	mux.HandleFunc("/idleBeat", e.beat)
 	// 创建服务器
 	server := &http.Server{
 		Addr:         e.address,
@@ -209,6 +211,33 @@ func (e *executor) taskLog(writer http.ResponseWriter, request *http.Request) {
 	}
 	str, _ := json.Marshal(res)
 	_, _ = writer.Write(str)
+}
+
+// 心跳检测
+func (e *executor) beat(writer http.ResponseWriter, request *http.Request) {
+	e.log.Info("心跳检测")
+	_, _ = writer.Write(returnGeneral())
+}
+
+// 忙碌检测
+func (e *executor) idleBeat(writer http.ResponseWriter, request *http.Request) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	req, _ := ioutil.ReadAll(request.Body)
+	param := &idleBeatReq{}
+	err := json.Unmarshal(req, &param)
+	if err != nil {
+		_, _ = writer.Write(returnIdleBeat(500))
+		e.log.Error("参数解析错误:" + string(req))
+		return
+	}
+	if e.runList.Exists(Int64ToStr(param.JobID)) {
+		_, _ = writer.Write(returnIdleBeat(500))
+		e.log.Error("idleBeat任务[" + Int64ToStr(param.JobID) + "]正在运行")
+		return
+	}
+	e.log.Info("忙碌检测任务参数:%v", param)
+	_, _ = writer.Write(returnGeneral())
 }
 
 //注册执行器到调度中心

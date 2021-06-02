@@ -46,7 +46,19 @@ func returnKill(req *killReq, code int64) []byte {
 	return str
 }
 
-
+//忙碌返回
+func returnIdleBeat(code int64) []byte {
+	msg := ""
+	if code != 200 {
+		msg = "Task is busy"
+	}
+	data := res{
+		Code: code,
+		Msg:  msg,
+	}
+	str, _ := json.Marshal(data)
+	return str
+}
 
 //通用返回
 func returnGeneral() []byte {

@@ -60,6 +60,11 @@ type killReq struct {
 	JobID int64 `json:"jobId"` // 任务ID
 }
 
+//忙碌检测请求参数
+type idleBeatReq struct {
+	JobID int64 `json:"jobId"` // 任务ID
+}
+
 //日志请求
 type LogReq struct {
 	LogDateTim  int64 `json:"logDateTim"`  // 本次调度日志时间
