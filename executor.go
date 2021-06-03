@@ -14,27 +14,27 @@ import (
 	"time"
 )
 
-//执行器
+// Executor 执行器
 type Executor interface {
-	//初始化
+	// Init 初始化
 	Init(...Option)
-	//日志查询
+	// LogHandler 日志查询
 	LogHandler(handler LogHandler)
-	//注册任务
+	// RegTask 注册任务
 	RegTask(pattern string, task TaskFunc)
-	//运行任务
+	// RunTask 运行任务
 	RunTask(writer http.ResponseWriter, request *http.Request)
-	//杀死任务
+	// KillTask 杀死任务
 	KillTask(writer http.ResponseWriter, request *http.Request)
-	//任务日志
+	// TaskLog 任务日志
 	TaskLog(writer http.ResponseWriter, request *http.Request)
-	//运行服务
+	// Run 运行服务
 	Run() error
-	//停止服务
+	// Stop 停止服务
 	Stop()
 }
 
-//创建执行器
+// NewExecutor 创建执行器
 func NewExecutor(opts ...Option) Executor {
 	return newExecutor(opts...)
 }
@@ -73,7 +73,7 @@ func (e *executor) Init(opts ...Option) {
 	go e.registry()
 }
 
-//日志handler
+// LogHandler 日志handler
 func (e *executor) LogHandler(handler LogHandler) {
 	e.logHandler = handler
 }
@@ -107,7 +107,7 @@ func (e *executor) Stop() {
 	e.registryRemove()
 }
 
-//注册任务
+// RegTask 注册任务
 func (e *executor) RegTask(pattern string, task TaskFunc) {
 	var t = &Task{}
 	t.fn = task
@@ -331,17 +331,17 @@ func (e *executor) post(action, body string) (resp *http.Response, err error) {
 	return client.Do(request)
 }
 
-//runTask
+// RunTask 运行任务
 func (e *executor) RunTask(writer http.ResponseWriter, request *http.Request) {
 	e.runTask(writer, request)
 }
 
-//killTask
+// KillTask 删除任务
 func (e *executor) KillTask(writer http.ResponseWriter, request *http.Request) {
 	e.killTask(writer, request)
 }
 
-//taskLog
+// TaskLog 任务日志
 func (e *executor) TaskLog(writer http.ResponseWriter, request *http.Request) {
 	e.taskLog(writer, request)
 }

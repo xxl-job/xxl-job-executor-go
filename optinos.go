@@ -42,42 +42,42 @@ var (
 	DefaultRegistryKey  = "golang-jobs"
 )
 
-// 设置调度中心地址
+// ServerAddr 设置调度中心地址
 func ServerAddr(addr string) Option {
 	return func(o *Options) {
 		o.ServerAddr = addr
 	}
 }
 
-// 请求令牌
+// AccessToken 请求令牌
 func AccessToken(token string) Option {
 	return func(o *Options) {
 		o.AccessToken = token
 	}
 }
 
-// 设置执行器IP
+// ExecutorIp 设置执行器IP
 func ExecutorIp(ip string) Option {
 	return func(o *Options) {
 		o.ExecutorIp = ip
 	}
 }
 
-// 设置执行器端口
+// ExecutorPort 设置执行器端口
 func ExecutorPort(port string) Option {
 	return func(o *Options) {
 		o.ExecutorPort = port
 	}
 }
 
-// 设置执行器标识
+// RegistryKey 设置执行器标识
 func RegistryKey(registryKey string) Option {
 	return func(o *Options) {
 		o.RegistryKey = registryKey
 	}
 }
 
-// 设置日志处理器
+// SetLogger 设置日志处理器
 func SetLogger(l Logger) Option {
 	return func(o *Options) {
 		o.l = l

@@ -5,10 +5,10 @@ import (
 	"log"
 )
 
-//应用日志
+// LogFunc 应用日志
 type LogFunc func(req LogReq, res *LogRes) []byte
 
-//系统日志
+// Logger 系统日志
 type Logger interface {
 	Info(format string, a ...interface{})
 	Error(format string, a ...interface{})

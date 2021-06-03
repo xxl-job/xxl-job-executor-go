@@ -8,40 +8,40 @@ type taskList struct {
 	data map[string]*Task
 }
 
-//设置数据
+// Set 设置数据
 func (t *taskList) Set(key string, val *Task) {
 	t.mu.Lock()
 	t.data[key] = val
 	t.mu.Unlock()
 }
 
-//获取数据
+// Get 获取数据
 func (t *taskList) Get(key string) *Task {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.data[key]
 }
 
-//获取数据
+// GetAll 获取数据
 func (t *taskList) GetAll() map[string]*Task {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.data
 }
 
-//设置数据
+// Del 设置数据
 func (t *taskList) Del(key string) {
 	t.mu.Lock()
 	delete(t.data, key)
 	t.mu.Unlock()
 }
 
-//长度
+// Len 长度
 func (t *taskList) Len() int {
 	return len(t.data)
 }
 
-//Key是否存在
+// Exists Key是否存在
 func (t *taskList) Exists(key string) bool {
 	_, ok := t.data[key]
 	return ok
