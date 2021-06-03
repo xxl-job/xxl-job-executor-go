@@ -6,10 +6,10 @@ import (
 	"runtime/debug"
 )
 
-//任务执行函数
+// TaskFunc 任务执行函数
 type TaskFunc func(cxt context.Context, param *RunReq) string
 
-//任务
+// Task 任务
 type Task struct {
 	Id        int64
 	Name      string
@@ -23,7 +23,7 @@ type Task struct {
 	log Logger
 }
 
-//运行任务
+// Run 运行任务
 func (t *Task) Run(callback func(code int64, msg string)) {
 	defer func(cancel func()) {
 		if err := recover(); err != nil {
@@ -38,7 +38,7 @@ func (t *Task) Run(callback func(code int64, msg string)) {
 	return
 }
 
-//任务信息
+// Info 任务信息
 func (t *Task) Info() string {
 	return "任务ID[" + Int64ToStr(t.Id) + "]任务名称[" + t.Name + "]参数：" + t.Param.ExecutorParams
 }
