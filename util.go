@@ -10,12 +10,6 @@ func Int64ToStr(i int64) string {
 	return strconv.FormatInt(i, 10)
 }
 
-// StrToInt64 str to int64
-func StrToInt64(str string) int64 {
-	i, _ := strconv.ParseInt(str, 10, 64)
-	return i
-}
-
 //执行任务回调
 func returnCall(req *RunReq, code int64, msg string) []byte {
 	data := call{
