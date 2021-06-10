@@ -16,6 +16,7 @@ func returnCall(req *RunReq, code int64, msg string) []byte {
 		&callElement{
 			LogID:      req.LogID,
 			LogDateTim: req.LogDateTime,
+			HandleCode: code,
 			ExecuteResult: &ExecuteResult{
 				Code: code,
 				Msg:  msg,

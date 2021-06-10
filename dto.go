@@ -21,6 +21,7 @@ type call []*callElement
 type callElement struct {
 	LogID         int64          `json:"logId"`
 	LogDateTim    int64          `json:"logDateTim"`
+	HandleCode    int64          `json:"handleCode"`
 	ExecuteResult *ExecuteResult `json:"executeResult"`
 }
 
