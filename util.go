@@ -20,6 +20,8 @@ func returnCall(req *RunReq, code int64, msg string) []byte {
 				Code: code,
 				Msg:  msg,
 			},
+			HandleCode: int(code),
+			HandleMsg:  msg,
 		},
 	}
 	str, _ := json.Marshal(data)
