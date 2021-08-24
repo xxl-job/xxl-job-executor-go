@@ -293,10 +293,12 @@ func (e *executor) registryRemove() {
 	param, err := json.Marshal(req)
 	if err != nil {
 		e.log.Error("执行器摘除失败:" + err.Error())
+		return
 	}
 	res, err := e.post("/api/registryRemove", string(param))
 	if err != nil {
 		e.log.Error("执行器摘除失败:" + err.Error())
+		return
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	e.log.Info("执行器摘除成功:" + string(body))
@@ -308,10 +310,12 @@ func (e *executor) callback(task *Task, code int64, msg string) {
 	res, err := e.post("/api/callback", string(returnCall(task.Param, code, msg)))
 	if err != nil {
 		e.log.Error("callback err : ", err.Error())
+		return
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		e.log.Error("callback ReadAll err : ", err.Error())
+		return
 	}
 	e.runList.Del(Int64ToStr(task.Id))
 	e.log.Info("任务回调成功:" + string(body))
