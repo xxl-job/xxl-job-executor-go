@@ -1,5 +1,11 @@
 package xxl
 
+// 响应码
+const (
+	SuccessCode = 200
+	FailureCode = 500
+)
+
 //通用响应
 type res struct {
 	Code int64       `json:"code"` // 200 表示正常、其他失败
