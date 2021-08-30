@@ -123,13 +123,13 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	param := &RunReq{}
 	err := json.Unmarshal(req, &param)
 	if err != nil {
-		_, _ = writer.Write(returnCall(param, 500, "params err"))
+		_, _ = writer.Write(generateRetBytes(FailureCode, "params err"))
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
 	e.log.Info("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
-		_, _ = writer.Write(returnCall(param, 500, "Task not registered"))
+		_, _ = writer.Write(generateRetBytes(FailureCode, "Task not registered"))
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
 		return
 	}
@@ -143,30 +143,40 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 				e.runList.Del(Int64ToStr(oldTask.Id))
 			}
 		} else { //单机串行,丢弃后续调度 都进行阻塞
-			_, _ = writer.Write(returnCall(param, 500, "There are tasks running"))
+			_, _ = writer.Write(generateRetBytes(FailureCode, "There are tasks running"))
 			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]已经在运行了:" + param.ExecutorHandler)
 			return
 		}
 	}
 
-	cxt := context.Background()
 	task := e.regList.Get(param.ExecutorHandler)
-	if param.ExecutorTimeout > 0 {
-		task.Ext, task.Cancel = context.WithTimeout(cxt, time.Duration(param.ExecutorTimeout)*time.Second)
-	} else {
-		task.Ext, task.Cancel = context.WithCancel(cxt)
-	}
-	task.Id = param.JobID
-	task.Name = param.ExecutorHandler
-	task.Param = param
-	task.log = e.log
+	runnableTask := createRunnableTask(param, task.fn, e.log)
 
-	e.runList.Set(Int64ToStr(task.Id), task)
-	go task.Run(func(code int64, msg string) {
-		e.callback(task, code, msg)
+	e.runList.Set(Int64ToStr(task.Id), runnableTask)
+	go runnableTask.Run(func(code int64, msg string) {
+		e.callback(runnableTask, code, msg)
 	})
 	e.log.Info("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
 	_, _ = writer.Write(returnGeneral())
+}
+
+func createRunnableTask(req *RunReq, taskFunc TaskFunc, log Logger) *Task {
+	ret := &Task{
+		Id:    req.JobID,
+		Name:  req.ExecutorHandler,
+		Param: req,
+		log:   log,
+		fn:    taskFunc,
+	}
+
+	cxt := context.Background()
+	if req.ExecutorTimeout > 0 {
+		ret.Ext, ret.Cancel = context.WithTimeout(cxt, time.Duration(req.ExecutorTimeout)*time.Second)
+	} else {
+		ret.Ext, ret.Cancel = context.WithCancel(cxt)
+	}
+
+	return ret
 }
 
 //删除一个任务
@@ -177,7 +187,7 @@ func (e *executor) killTask(writer http.ResponseWriter, request *http.Request) {
 	param := &killReq{}
 	_ = json.Unmarshal(req, &param)
 	if !e.runList.Exists(Int64ToStr(param.JobID)) {
-		_, _ = writer.Write(returnKill(param, 500))
+		_, _ = writer.Write(returnKill(param, FailureCode))
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有运行")
 		return
 	}
@@ -227,12 +237,12 @@ func (e *executor) idleBeat(writer http.ResponseWriter, request *http.Request) {
 	param := &idleBeatReq{}
 	err := json.Unmarshal(req, &param)
 	if err != nil {
-		_, _ = writer.Write(returnIdleBeat(500))
+		_, _ = writer.Write(returnIdleBeat(FailureCode))
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
 	if e.runList.Exists(Int64ToStr(param.JobID)) {
-		_, _ = writer.Write(returnIdleBeat(500))
+		_, _ = writer.Write(returnIdleBeat(FailureCode))
 		e.log.Error("idleBeat任务[" + Int64ToStr(param.JobID) + "]正在运行")
 		return
 	}
@@ -271,7 +281,7 @@ func (e *executor) registry() {
 			}
 			res := &res{}
 			_ = json.Unmarshal(body, &res)
-			if res.Code != 200 {
+			if res.Code != SuccessCode {
 				e.log.Error("执行器注册失败3:" + string(body))
 				return
 			}
@@ -307,6 +317,8 @@ func (e *executor) registryRemove() {
 
 //回调任务列表
 func (e *executor) callback(task *Task, code int64, msg string) {
+	defer e.runList.Del(Int64ToStr(task.Id))
+
 	res, err := e.post("/api/callback", string(returnCall(task.Param, code, msg)))
 	if err != nil {
 		e.log.Error("callback err : ", err.Error())
@@ -317,7 +329,6 @@ func (e *executor) callback(task *Task, code int64, msg string) {
 		e.log.Error("callback ReadAll err : ", err.Error())
 		return
 	}
-	e.runList.Del(Int64ToStr(task.Id))
 	e.log.Info("任务回调成功:" + string(body))
 }
 

@@ -49,6 +49,12 @@ func ServerAddr(addr string) Option {
 	}
 }
 
+func HttpTimeOut(timeout time.Duration) Option {
+	return func(o *Options) {
+		o.Timeout = timeout
+	}
+}
+
 // AccessToken 请求令牌
 func AccessToken(token string) Option {
 	return func(o *Options) {

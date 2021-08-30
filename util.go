@@ -31,37 +31,31 @@ func returnCall(req *RunReq, code int64, msg string) []byte {
 //杀死任务返回
 func returnKill(req *killReq, code int64) []byte {
 	msg := ""
-	if code != 200 {
+	if code != SuccessCode {
 		msg = "Task kill err"
 	}
-	data := res{
-		Code: code,
-		Msg:  msg,
-	}
-	str, _ := json.Marshal(data)
-	return str
+	return generateRetBytes(code, msg)
 }
 
 //忙碌返回
 func returnIdleBeat(code int64) []byte {
 	msg := ""
-	if code != 200 {
+	if code != SuccessCode {
 		msg = "Task is busy"
 	}
-	data := res{
-		Code: code,
-		Msg:  msg,
-	}
-	str, _ := json.Marshal(data)
-	return str
+	return generateRetBytes(code, msg)
 }
 
 //通用返回
 func returnGeneral() []byte {
+	return generateRetBytes(SuccessCode, "")
+}
+
+func generateRetBytes(code int64, msg string) []byte {
 	data := &res{
-		Code: 200,
-		Msg:  "",
+		Code: code,
+		Msg:  msg,
 	}
-	str, _ := json.Marshal(data)
-	return str
+	bytes, _ := json.Marshal(data)
+	return bytes
 }

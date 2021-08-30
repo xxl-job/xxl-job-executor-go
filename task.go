@@ -29,12 +29,12 @@ func (t *Task) Run(callback func(code int64, msg string)) {
 		if err := recover(); err != nil {
 			t.log.Info(t.Info()+" panic: %v", err)
 			debug.PrintStack() //堆栈跟踪
-			callback(500, "task panic:"+fmt.Sprintf("%v", err))
+			callback(FailureCode, "task panic:"+fmt.Sprintf("%v", err))
 			cancel()
 		}
 	}(t.Cancel)
 	msg := t.fn(t.Ext, t.Param)
-	callback(200, msg)
+	callback(SuccessCode, msg)
 	return
 }
 
