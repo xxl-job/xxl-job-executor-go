@@ -149,24 +149,34 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		}
 	}
 
-	cxt := context.Background()
 	task := e.regList.Get(param.ExecutorHandler)
-	if param.ExecutorTimeout > 0 {
-		task.Ext, task.Cancel = context.WithTimeout(cxt, time.Duration(param.ExecutorTimeout)*time.Second)
-	} else {
-		task.Ext, task.Cancel = context.WithCancel(cxt)
-	}
-	task.Id = param.JobID
-	task.Name = param.ExecutorHandler
-	task.Param = param
-	task.log = e.log
+	runnableTask := createRunnableTask(param, task.fn, e.log)
 
-	e.runList.Set(Int64ToStr(task.Id), task)
-	go task.Run(func(code int64, msg string) {
-		e.callback(task, code, msg)
+	e.runList.Set(Int64ToStr(task.Id), runnableTask)
+	go runnableTask.Run(func(code int64, msg string) {
+		e.callback(runnableTask, code, msg)
 	})
 	e.log.Info("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
 	_, _ = writer.Write(returnGeneral())
+}
+
+func createRunnableTask(req *RunReq, taskFunc TaskFunc, log Logger) *Task {
+	ret := &Task{
+		Id:    req.JobID,
+		Name:  req.ExecutorHandler,
+		Param: req,
+		log:   log,
+		fn:    taskFunc,
+	}
+
+	cxt := context.Background()
+	if req.ExecutorTimeout > 0 {
+		ret.Ext, ret.Cancel = context.WithTimeout(cxt, time.Duration(req.ExecutorTimeout)*time.Second)
+	} else {
+		ret.Ext, ret.Cancel = context.WithCancel(cxt)
+	}
+
+	return ret
 }
 
 //删除一个任务
