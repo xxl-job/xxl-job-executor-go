@@ -307,6 +307,7 @@ func (e *executor) registryRemove() {
 
 //回调任务列表
 func (e *executor) callback(task *Task, code int64, msg string) {
+	e.runList.Del(Int64ToStr(task.Id))
 	res, err := e.post("/api/callback", string(returnCall(task.Param, code, msg)))
 	if err != nil {
 		e.log.Error("callback err : ", err.Error())
@@ -317,7 +318,6 @@ func (e *executor) callback(task *Task, code int64, msg string) {
 		e.log.Error("callback ReadAll err : ", err.Error())
 		return
 	}
-	e.runList.Del(Int64ToStr(task.Id))
 	e.log.Info("任务回调成功:" + string(body))
 }
 
