@@ -349,3 +349,8 @@ func (e *executor) KillTask(writer http.ResponseWriter, request *http.Request) {
 func (e *executor) TaskLog(writer http.ResponseWriter, request *http.Request) {
 	e.taskLog(writer, request)
 }
+
+// IdleBeat 忙碌检测
+func (e *executor) IdleBeat(writer http.ResponseWriter, request *http.Request) {
+	e.idleBeat(writer, request)
+}
