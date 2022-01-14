@@ -369,7 +369,7 @@ func (e *executor) IdleBeat(writer http.ResponseWriter, request *http.Request) {
 	e.idleBeat(writer, request)
 }
 
-// IdleBeat 忙碌检测
+// Health 健康检查
 func (e *executor) Health(writer http.ResponseWriter, request *http.Request) {
 	e.opts.HealthCheckFunc(writer, request)
 }
