@@ -91,6 +91,11 @@ func (e *executor) Run() (err error) {
 	mux.HandleFunc("/log", e.taskLog)
 	mux.HandleFunc("/beat", e.beat)
 	mux.HandleFunc("/idleBeat", e.idleBeat)
+
+	if e.opts.HealthCheck {
+		mux.HandleFunc("/health", e.Health)
+	}
+
 	// 创建服务器
 	server := &http.Server{
 		Addr:         e.address,
@@ -363,3 +368,9 @@ func (e *executor) Beat(writer http.ResponseWriter, request *http.Request) {
 func (e *executor) IdleBeat(writer http.ResponseWriter, request *http.Request) {
 	e.idleBeat(writer, request)
 }
+
+// IdleBeat 忙碌检测
+func (e *executor) Health(writer http.ResponseWriter, request *http.Request) {
+	e.opts.HealthCheckFunc(writer, request)
+}
+

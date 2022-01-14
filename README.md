@@ -13,10 +13,11 @@
 9.可自定义日志
 10.自定义日志查看handler
 11.支持外部路由（可与gin集成）
+12.微服务下基于xxl执行器端独立的健康检查能力
 ```
 
 # Example
-```
+```go
 package main
 
 import (
@@ -34,6 +35,21 @@ func main() {
 		xxl.ExecutorPort("9999"),       //默认9999（非必填）
 		xxl.RegistryKey("golang-jobs"), //执行器名称
 		xxl.SetLogger(&logger{}),       //自定义日志
+		xxl.HealthCheck(func(writer http.ResponseWriter, request *http.Request) {
+
+			// DIY Block
+			resp := make(map[string]string)
+			resp = map[string]string{
+				"status":    "UP",
+				"timestamp": time.Now().Format("2006-01-02 15:04:05"),
+			}
+
+			writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+			writer.WriteHeader(200)
+			data, _ := json.Marshal(resp)
+			_, _ = writer.Write(data)
+
+		}),
 	)
 	exec.Init()
 	//设置日志查看handler
