@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	xxl "github.com/xxl-job/xxl-job-executor-go"
 	"github.com/xxl-job/xxl-job-executor-go/example/task"
-	"log"
 )
 
 func main() {
@@ -13,6 +14,7 @@ func main() {
 		xxl.AccessToken(""),            //请求令牌(默认为空)
 		xxl.ExecutorIp("127.0.0.1"),    //可自动获取
 		xxl.ExecutorPort("9999"),       //默认9999（非必填）
+		xxl.ListenIp("0.0.0.0"),        // 监听地址（非必填，默认使用本机地址）
 		xxl.RegistryKey("golang-jobs"), //执行器名称
 		xxl.SetLogger(&logger{}),       //自定义日志
 	)

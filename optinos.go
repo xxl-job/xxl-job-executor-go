@@ -1,8 +1,9 @@
 package xxl
 
 import (
-	"github.com/go-basic/ipv4"
 	"time"
+
+	"github.com/go-basic/ipv4"
 )
 
 type Options struct {
@@ -11,6 +12,7 @@ type Options struct {
 	Timeout      time.Duration `json:"timeout"`       //接口超时时间
 	ExecutorIp   string        `json:"executor_ip"`   //本地(执行器)IP(可自行获取)
 	ExecutorPort string        `json:"executor_port"` //本地(执行器)端口
+	ListenIp     string        `json:"listen_ip"`     // 本地(执行器)监听IP(可自行获取)
 	RegistryKey  string        `json:"registry_key"`  //执行器名称
 	LogDir       string        `json:"log_dir"`       //日志目录
 
@@ -20,6 +22,7 @@ type Options struct {
 func newOptions(opts ...Option) Options {
 	opt := Options{
 		ExecutorIp:   ipv4.LocalIP(),
+		ListenIp:     ipv4.LocalIP(),
 		ExecutorPort: DefaultExecutorPort,
 		RegistryKey:  DefaultRegistryKey,
 	}
@@ -67,6 +70,13 @@ func ExecutorIp(ip string) Option {
 func ExecutorPort(port string) Option {
 	return func(o *Options) {
 		o.ExecutorPort = port
+	}
+}
+
+// ListenIp 设置执行器监听IP
+func ListenIp(ip string) Option {
+	return func(o *Options) {
+		o.ListenIp = ip
 	}
 }
 

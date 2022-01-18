@@ -3,6 +3,7 @@ package xxl
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -53,7 +54,6 @@ func newExecutor(opts ...Option) *executor {
 
 type executor struct {
 	opts    Options
-	address string
 	regList *taskList //注册任务列表
 	runList *taskList //正在执行任务列表
 	mu      sync.RWMutex
@@ -73,7 +73,7 @@ func (e *executor) Init(opts ...Option) {
 	e.runList = &taskList{
 		data: make(map[string]*Task),
 	}
-	e.address = e.opts.ExecutorIp + ":" + e.opts.ExecutorPort
+
 	go e.registry()
 }
 
@@ -93,12 +93,12 @@ func (e *executor) Run() (err error) {
 	mux.HandleFunc("/idleBeat", e.idleBeat)
 	// 创建服务器
 	server := &http.Server{
-		Addr:         e.address,
+		Addr:         e.getListenAddress(),
 		WriteTimeout: time.Second * 3,
 		Handler:      mux,
 	}
 	// 监听端口并提供服务
-	e.log.Info("Starting server at " + e.address)
+	e.log.Info("Starting server at " + e.getListenAddress())
 	go server.ListenAndServe()
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
@@ -252,7 +252,7 @@ func (e *executor) registry() {
 	req := &Registry{
 		RegistryGroup: "EXECUTOR",
 		RegistryKey:   e.opts.RegistryKey,
-		RegistryValue: "http://" + e.address,
+		RegistryValue: e.getNotifyURL(),
 	}
 	param, err := json.Marshal(req)
 	if err != nil {
@@ -292,7 +292,7 @@ func (e *executor) registryRemove() {
 	req := &Registry{
 		RegistryGroup: "EXECUTOR",
 		RegistryKey:   e.opts.RegistryKey,
-		RegistryValue: "http://" + e.address,
+		RegistryValue: e.getNotifyURL(),
 	}
 	param, err := json.Marshal(req)
 	if err != nil {
@@ -337,6 +337,18 @@ func (e *executor) post(action, body string) (resp *http.Response, err error) {
 		Timeout: e.opts.Timeout,
 	}
 	return client.Do(request)
+}
+
+// getNotifyURL 获取调度地址
+func (e *executor) getNotifyURL() string {
+
+	return fmt.Sprintf("http://%s:%s", e.opts.ExecutorIp, e.opts.ExecutorPort)
+}
+
+// getListenAddress 获取监听地址
+func (e *executor) getListenAddress() string {
+
+	return fmt.Sprintf("%s:%s", e.opts.ListenIp, e.opts.ExecutorPort)
 }
 
 // RunTask 运行任务
