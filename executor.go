@@ -138,6 +138,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	var task *Task
 	//阻塞策略处理
 	if e.runList.Exists(Int64ToStr(param.JobID)) {
 		if param.ExecutorBlockStrategy == coverEarly { //覆盖之前调度
@@ -146,15 +147,20 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 				oldTask.Cancel()
 				e.runList.Del(Int64ToStr(oldTask.Id))
 			}
-		} else { //单机串行,丢弃后续调度 都进行阻塞
-			_, _ = writer.Write(returnCall(param, 500, "There are tasks running"))
+		} else {
+			//单机串行,丢弃后续调度 都进行阻塞
+			// 返回任务调度结果
+			_, _ = writer.Write(returnGeneral())
 			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]已经在运行了:" + param.ExecutorHandler)
+			task.Param = param
+			// 直接回调返回任务执行结果
+			e.callback(task, 500, "There are tasks running")
 			return
 		}
 	}
 
 	cxt := context.Background()
-	task := e.regList.Get(param.ExecutorHandler)
+	task = e.regList.Get(param.ExecutorHandler)
 	if param.ExecutorTimeout > 0 {
 		task.Ext, task.Cancel = context.WithTimeout(cxt, time.Duration(param.ExecutorTimeout)*time.Second)
 	} else {
