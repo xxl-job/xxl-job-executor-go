@@ -25,29 +25,41 @@ type Task struct {
 
 // Run 运行任务
 func (t *Task) Run(callback func(code int64, msg string)) {
-	defer func(cancel func()) {
+	done := make(chan *res, 1)
+	defer func() {
 		if err := recover(); err != nil {
-			t.log.Info(t.Info()+" panic: %v", err)
+			t.log.Error(t.Info()+" panic: %v", err)
 			debug.PrintStack() //堆栈跟踪
-			callback(500, "task panic:"+fmt.Sprintf("%v", err))
+			msg := "task panic:" + fmt.Sprintf("%v", err)
+			result := &res{
+				Code: 500,
+				Msg:  msg,
+			}
+			done <- result
 		}
-		cancel()
-	}(t.Cancel)
-	// 回传任务的执行结果
-	done := make(chan string, 1)
-	go func(t *Task) {
-		msg := t.fn(t.Ext, t.Param)
-		done <- msg
-	}(t)
+	}()
+	// 启动监测协程
+	go monitor(done, t, callback)
+	msg := t.fn(t.Ext, t.Param)
+	result := &res{
+		Code: 200,
+		Msg:  msg,
+	}
+	done <- result
+}
+
+// monitor 检测任务运行状态,任务执行结果回调
+func monitor(done chan *res, task *Task, callback func(code int64, msg string)) {
 	select {
 	// 判断任务执行是否超时
-	case <-t.Ext.Done():
-		t.log.Error("time out")
+	case <-task.Ext.Done():
+		task.log.Error("time out")
 		callback(502, "job execute timeout")
-	case msg := <-done:
-		callback(200, msg)
+		return
+	case result := <-done:
+		callback(result.Code, result.Msg.(string))
+		return
 	}
-	return
 }
 
 // Info 任务信息
