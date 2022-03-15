@@ -30,11 +30,23 @@ func (t *Task) Run(callback func(code int64, msg string)) {
 			t.log.Info(t.Info()+" panic: %v", err)
 			debug.PrintStack() //堆栈跟踪
 			callback(500, "task panic:"+fmt.Sprintf("%v", err))
-			cancel()
 		}
+		cancel()
 	}(t.Cancel)
-	msg := t.fn(t.Ext, t.Param)
-	callback(200, msg)
+	// 回传任务的执行结果
+	done := make(chan string, 1)
+	go func(t *Task) {
+		msg := t.fn(t.Ext, t.Param)
+		done <- msg
+	}(t)
+	select {
+	// 判断任务执行是否超时
+	case <-t.Ext.Done():
+		t.log.Error("time out")
+		callback(502, "job execute timeout")
+	case msg := <-done:
+		callback(200, msg)
+	}
 	return
 }
 
