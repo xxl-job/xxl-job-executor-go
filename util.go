@@ -31,7 +31,7 @@ func returnCall(req *RunReq, code int64, msg string) []byte {
 //杀死任务返回
 func returnKill(req *killReq, code int64) []byte {
 	msg := ""
-	if code != 200 {
+	if code != SuccessCode {
 		msg = "Task kill err"
 	}
 	data := res{
@@ -45,7 +45,7 @@ func returnKill(req *killReq, code int64) []byte {
 //忙碌返回
 func returnIdleBeat(code int64) []byte {
 	msg := ""
-	if code != 200 {
+	if code != SuccessCode {
 		msg = "Task is busy"
 	}
 	data := res{
@@ -59,7 +59,7 @@ func returnIdleBeat(code int64) []byte {
 //通用返回
 func returnGeneral() []byte {
 	data := &res{
-		Code: 200,
+		Code: SuccessCode,
 		Msg:  "",
 	}
 	str, _ := json.Marshal(data)

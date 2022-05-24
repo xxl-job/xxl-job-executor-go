@@ -127,13 +127,13 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	param := &RunReq{}
 	err := json.Unmarshal(req, &param)
 	if err != nil {
-		_, _ = writer.Write(returnCall(param, 500, "params err"))
+		_, _ = writer.Write(returnCall(param, FailureCode, "params err"))
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
 	e.log.Info("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
-		_, _ = writer.Write(returnCall(param, 500, "Task not registered"))
+		_, _ = writer.Write(returnCall(param, FailureCode, "Task not registered"))
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
 		return
 	}
@@ -147,7 +147,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 				e.runList.Del(Int64ToStr(oldTask.Id))
 			}
 		} else { //单机串行,丢弃后续调度 都进行阻塞
-			_, _ = writer.Write(returnCall(param, 500, "There are tasks running"))
+			_, _ = writer.Write(returnCall(param, FailureCode, "There are tasks running"))
 			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]已经在运行了:" + param.ExecutorHandler)
 			return
 		}
@@ -181,7 +181,7 @@ func (e *executor) killTask(writer http.ResponseWriter, request *http.Request) {
 	param := &killReq{}
 	_ = json.Unmarshal(req, &param)
 	if !e.runList.Exists(Int64ToStr(param.JobID)) {
-		_, _ = writer.Write(returnKill(param, 500))
+		_, _ = writer.Write(returnKill(param, FailureCode))
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有运行")
 		return
 	}
@@ -231,12 +231,12 @@ func (e *executor) idleBeat(writer http.ResponseWriter, request *http.Request) {
 	param := &idleBeatReq{}
 	err := json.Unmarshal(req, &param)
 	if err != nil {
-		_, _ = writer.Write(returnIdleBeat(500))
+		_, _ = writer.Write(returnIdleBeat(FailureCode))
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
 	if e.runList.Exists(Int64ToStr(param.JobID)) {
-		_, _ = writer.Write(returnIdleBeat(500))
+		_, _ = writer.Write(returnIdleBeat(FailureCode))
 		e.log.Error("idleBeat任务[" + Int64ToStr(param.JobID) + "]正在运行")
 		return
 	}
@@ -275,7 +275,7 @@ func (e *executor) registry() {
 			}
 			res := &res{}
 			_ = json.Unmarshal(body, &res)
-			if res.Code != 200 {
+			if res.Code != SuccessCode {
 				e.log.Error("执行器注册失败3:" + string(body))
 				return
 			}
