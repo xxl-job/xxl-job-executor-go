@@ -99,7 +99,10 @@ func (e *executor) Run() (err error) {
 	}
 	// 监听端口并提供服务
 	e.log.Info("Starting server at " + e.address)
-	go server.ListenAndServe()
+	err = server.ListenAndServe()
+	if err != nil {
+		return err
+	}
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
