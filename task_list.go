@@ -2,14 +2,6 @@ package xxl
 
 import "sync"
 
-type Storage interface {
-	Set(key, value string)
-	Get(key string) string
-	Del(key string)
-	Len() int
-	Exists(key string) bool
-}
-
 //任务列表 [JobID]执行函数,并行执行时[+LogID]
 type taskList struct {
 	mu   sync.RWMutex

@@ -2,7 +2,6 @@ package xxl
 
 import (
 	"github.com/go-basic/ipv4"
-	"sync"
 	"time"
 )
 
@@ -46,41 +45,6 @@ var (
 	DefaultExecutorPort = "9999"
 	DefaultRegistryKey  = "golang-jobs"
 )
-
-type SessionStorage struct {
-	mu   sync.RWMutex
-	data map[string]string
-}
-
-func NewSessionStorage() *SessionStorage {
-	return &SessionStorage{data: make(map[string]string)}
-}
-
-func (s *SessionStorage) Set(key, value string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.data[key] = value
-}
-
-func (s *SessionStorage) Get(key string) string {
-	value, _ := s.data[key]
-	return value
-}
-
-func (s *SessionStorage) Del(key string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.data, key)
-}
-
-func (s *SessionStorage) Len() int {
-	return len(s.data)
-}
-
-func (s *SessionStorage) Exists(key string) bool {
-	_, exists := s.data[key]
-	return exists
-}
 
 // ServerAddr 设置调度中心地址
 func ServerAddr(addr string) Option {
