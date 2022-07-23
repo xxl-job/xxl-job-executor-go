@@ -21,7 +21,9 @@ type Executor interface {
 	// LogHandler 日志查询
 	LogHandler(handler LogHandler)
 	// RegTask 注册任务
-	RegTask(pattern string, task TaskFunc)
+	//RegTask(pattern string, task TaskFunc)
+	// RegTaskByName 注册任务
+	RegTaskByName(pattern, handlerName string)
 	// RunTask 运行任务
 	RunTask(writer http.ResponseWriter, request *http.Request)
 	// KillTask 杀死任务
@@ -98,7 +100,7 @@ func (e *executor) Run() (err error) {
 		Handler:      mux,
 	}
 	// 监听端口并提供服务
-	e.log.Info("Starting server at " + e.address)
+	e.log.Debug("Starting server at " + e.address)
 	go server.ListenAndServe()
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
@@ -119,6 +121,15 @@ func (e *executor) RegTask(pattern string, task TaskFunc) {
 	return
 }
 
+// RegTaskByName 注册任务
+func (e *executor) RegTaskByName(pattern, handlerName string) {
+	var t = &Task{}
+	//t.fn = task
+	e.opts.Storage.Set(pattern, handlerName)
+	e.regList.Set(pattern, t)
+	return
+}
+
 //运行一个任务
 func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	e.mu.Lock()
@@ -131,7 +142,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
-	e.log.Info("任务参数:%v", param)
+	e.log.Debug("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		_, _ = writer.Write(returnCall(param, FailureCode, "Task not registered"))
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
@@ -166,10 +177,15 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	task.log = e.log
 
 	e.runList.Set(Int64ToStr(task.Id), task)
+	handlerName := e.opts.Storage.Get(param.ExecutorHandler)
+	handler, exists := e.opts.HandlerMap[handlerName]
+	if !exists {
+
+	}
 	go task.Run(func(code int64, msg string) {
 		e.callback(task, code, msg)
-	})
-	e.log.Info("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
+	}, handler)
+	e.log.Debug("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
 	_, _ = writer.Write(returnGeneral())
 }
 
@@ -240,7 +256,7 @@ func (e *executor) idleBeat(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("idleBeat任务[" + Int64ToStr(param.JobID) + "]正在运行")
 		return
 	}
-	e.log.Info("忙碌检测任务参数:%v", param)
+	e.log.Debug("忙碌检测任务参数:%v", param)
 	_, _ = writer.Write(returnGeneral())
 }
 
@@ -279,7 +295,7 @@ func (e *executor) registry() {
 				e.log.Error("执行器注册失败3:" + string(body))
 				return
 			}
-			e.log.Info("执行器注册成功:" + string(body))
+			e.log.Debug("执行器注册成功:" + string(body))
 		}()
 
 	}

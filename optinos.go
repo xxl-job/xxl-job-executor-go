@@ -2,6 +2,7 @@ package xxl
 
 import (
 	"github.com/go-basic/ipv4"
+	"sync"
 	"time"
 )
 
@@ -14,7 +15,9 @@ type Options struct {
 	RegistryKey  string        `json:"registry_key"`  //执行器名称
 	LogDir       string        `json:"log_dir"`       //日志目录
 
-	l Logger //日志处理
+	Storage    Storage             // 任务存储
+	HandlerMap map[string]TaskFunc // 任务函数
+	l          Logger              //日志处理
 }
 
 func newOptions(opts ...Option) Options {
@@ -22,6 +25,8 @@ func newOptions(opts ...Option) Options {
 		ExecutorIp:   ipv4.LocalIP(),
 		ExecutorPort: DefaultExecutorPort,
 		RegistryKey:  DefaultRegistryKey,
+		HandlerMap:   make(map[string]TaskFunc, 0),
+		Storage:      NewSessionStorage(),
 	}
 
 	for _, o := range opts {
@@ -41,6 +46,41 @@ var (
 	DefaultExecutorPort = "9999"
 	DefaultRegistryKey  = "golang-jobs"
 )
+
+type SessionStorage struct {
+	mu   sync.RWMutex
+	data map[string]string
+}
+
+func NewSessionStorage() *SessionStorage {
+	return &SessionStorage{data: make(map[string]string)}
+}
+
+func (s *SessionStorage) Set(key, value string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data[key] = value
+}
+
+func (s *SessionStorage) Get(key string) string {
+	value, _ := s.data[key]
+	return value
+}
+
+func (s *SessionStorage) Del(key string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.data, key)
+}
+
+func (s *SessionStorage) Len() int {
+	return len(s.data)
+}
+
+func (s *SessionStorage) Exists(key string) bool {
+	_, exists := s.data[key]
+	return exists
+}
 
 // ServerAddr 设置调度中心地址
 func ServerAddr(addr string) Option {
@@ -81,5 +121,19 @@ func RegistryKey(registryKey string) Option {
 func SetLogger(l Logger) Option {
 	return func(o *Options) {
 		o.l = l
+	}
+}
+
+// SetHandlerMap 设置job处理器
+func SetHandlerMap(m map[string]TaskFunc) Option {
+	return func(o *Options) {
+		o.HandlerMap = m
+	}
+}
+
+// SetStorage 设置job处理器
+func SetStorage(storage Storage) Option {
+	return func(o *Options) {
+		o.Storage = storage
 	}
 }

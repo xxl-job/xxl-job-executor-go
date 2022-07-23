@@ -3,15 +3,11 @@ package xxl
 import "sync"
 
 type Storage interface {
-	Set(taskName, handlerName string) error
-	Get(key string) (string, error)
-	GetAll() ([]string, error)
-	Del(key string) error
+	Set(key, value string)
+	Get(key string) string
+	Del(key string)
 	Len() int
 	Exists(key string) bool
-}
-
-type SessionStorage struct {
 }
 
 //任务列表 [JobID]执行函数,并行执行时[+LogID]
