@@ -24,7 +24,7 @@ type Task struct {
 }
 
 // Run 运行任务
-func (t *Task) Run(callback func(code int64, msg string)) {
+func (t *Task) Run(callback func(code int64, msg string), fn TaskFunc) {
 	defer func(cancel func()) {
 		if err := recover(); err != nil {
 			t.log.Info(t.Info()+" panic: %v", err)
@@ -33,7 +33,7 @@ func (t *Task) Run(callback func(code int64, msg string)) {
 			cancel()
 		}
 	}(t.Cancel)
-	msg := t.fn(t.Ext, t.Param)
+	msg := fn(t.Ext, t.Param)
 	callback(SuccessCode, msg)
 	return
 }

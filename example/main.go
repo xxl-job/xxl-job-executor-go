@@ -8,6 +8,13 @@ import (
 )
 
 func main() {
+
+	handlerMap := map[string]xxl.TaskFunc{
+		"task.test":  task.Test,
+		"task.test2": task.Test2,
+		"task.panic": task.Panic,
+	}
+
 	exec := xxl.NewExecutor(
 		xxl.ServerAddr("http://127.0.0.1/xxl-job-admin"),
 		xxl.AccessToken(""),            //请求令牌(默认为空)
@@ -15,6 +22,7 @@ func main() {
 		xxl.ExecutorPort("9999"),       //默认9999（非必填）
 		xxl.RegistryKey("golang-jobs"), //执行器名称
 		xxl.SetLogger(&logger{}),       //自定义日志
+		xxl.SetHandlerMap(handlerMap),
 	)
 	exec.Init()
 	//设置日志查看handler
@@ -27,14 +35,18 @@ func main() {
 		}}
 	})
 	//注册任务handler
-	exec.RegTask("task.test", task.Test)
-	exec.RegTask("task.test2", task.Test2)
-	exec.RegTask("task.panic", task.Panic)
+	exec.RegTaskByName("task.test", "task.test")
+	exec.RegTaskByName("task.test2", "task.test2")
+	exec.RegTaskByName("task.panic", "task.panic")
 	log.Fatal(exec.Run())
 }
 
 //xxl.Logger接口实现
 type logger struct{}
+
+func (l *logger) Debug(format string, a ...interface{}) {
+	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))
+}
 
 func (l *logger) Info(format string, a ...interface{}) {
 	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))

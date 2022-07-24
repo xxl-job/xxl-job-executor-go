@@ -14,7 +14,9 @@ type Options struct {
 	RegistryKey  string        `json:"registry_key"`  //执行器名称
 	LogDir       string        `json:"log_dir"`       //日志目录
 
-	l Logger //日志处理
+	Storage    Storager            // 任务存储
+	HandlerMap map[string]TaskFunc // 任务函数
+	l          Logger              //日志处理
 }
 
 func newOptions(opts ...Option) Options {
@@ -22,6 +24,8 @@ func newOptions(opts ...Option) Options {
 		ExecutorIp:   ipv4.LocalIP(),
 		ExecutorPort: DefaultExecutorPort,
 		RegistryKey:  DefaultRegistryKey,
+		HandlerMap:   make(map[string]TaskFunc, 0),
+		Storage:      NewSessionStorage(),
 	}
 
 	for _, o := range opts {
@@ -81,5 +85,19 @@ func RegistryKey(registryKey string) Option {
 func SetLogger(l Logger) Option {
 	return func(o *Options) {
 		o.l = l
+	}
+}
+
+// SetHandlerMap 设置job处理器
+func SetHandlerMap(m map[string]TaskFunc) Option {
+	return func(o *Options) {
+		o.HandlerMap = m
+	}
+}
+
+// SetStorage 设置job处理器
+func SetStorage(storage Storager) Option {
+	return func(o *Options) {
+		o.Storage = storage
 	}
 }
