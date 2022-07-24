@@ -14,7 +14,7 @@ type Options struct {
 	RegistryKey  string        `json:"registry_key"`  //执行器名称
 	LogDir       string        `json:"log_dir"`       //日志目录
 
-	Storage    Storage             // 任务存储
+	Storage    Storager            // 任务存储
 	HandlerMap map[string]TaskFunc // 任务函数
 	l          Logger              //日志处理
 }
@@ -96,7 +96,7 @@ func SetHandlerMap(m map[string]TaskFunc) Option {
 }
 
 // SetStorage 设置job处理器
-func SetStorage(storage Storage) Option {
+func SetStorage(storage Storager) Option {
 	return func(o *Options) {
 		o.Storage = storage
 	}
