@@ -3,6 +3,7 @@ package xxl
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -104,15 +105,40 @@ func (e *executor) Run() (err error) {
 	// 监听端口并提供服务
 	e.log.Debug("Starting server at " + e.address)
 	go server.ListenAndServe()
+	stopCh := make(chan error)
+	go e.ScanExpiredTask(stopCh)
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	stopCh <- nil
 	e.registryRemove()
 	return nil
 }
 
 func (e *executor) Stop() {
 	e.registryRemove()
+}
+
+// ScanExpiredTask 扫描过期任务, 将其从内存中删除
+func (e *executor) ScanExpiredTask(ch <-chan error) {
+	t := time.NewTicker(time.Minute)
+	for {
+		select {
+		case <-ch:
+			return
+		case <-t.C:
+			shouldDelete := make([]string, 0)
+			for taskName := range e.regList.GetAll() {
+				if !e.opts.Storage.Exists(taskName) && !e.runList.Exists(taskName) {
+					shouldDelete = append(shouldDelete, taskName)
+				}
+			}
+
+			for _, name := range shouldDelete {
+				e.regList.Del(name)
+			}
+		}
+	}
 }
 
 // RegTempTask 注册临时性任务
@@ -139,6 +165,10 @@ func (e *executor) RegTaskNoStorage(pattern string) {
 	e.regList.Set(pattern, t)
 }
 
+func notFoundHandler(cxt context.Context, param *RunReq) string {
+	panic(fmt.Sprintf("JobId=%d, ExecutorHandler=%s, 未找到该任务处理器", param.JobID, param.ExecutorHandler))
+}
+
 //运行一个任务
 func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	e.mu.Lock()
@@ -153,9 +183,15 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	}
 	e.log.Debug("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
-		_, _ = writer.Write(returnCall(param, FailureCode, "Task not registered"))
-		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
-		return
+		if e.opts.Storage.Exists(param.ExecutorHandler) {
+			// 因为taskList数据存储在内存, 动态注册的任务时, 除去被注册节点, 其他节点并没有该任务数据
+			// 所以需要即时注册该任务
+			e.RegTaskNoStorage(param.ExecutorHandler)
+		} else {
+			_, _ = writer.Write(returnCall(param, FailureCode, "Task not registered"))
+			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
+			return
+		}
 	}
 
 	//阻塞策略处理
@@ -189,9 +225,9 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	handlerName := e.opts.Storage.Get(param.ExecutorHandler)
 	handler, exists := e.opts.HandlerMap[handlerName]
 	if !exists {
-		e.log.Error("任务[" + Int64ToStr(param.JobID) + "], 未找到处理器:" + param.ExecutorHandler)
-		return
+		handler = notFoundHandler
 	}
+
 	go task.Run(func(code int64, msg string) {
 		e.callback(task, code, msg)
 	}, handler)
