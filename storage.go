@@ -1,6 +1,7 @@
 package xxl
 
 import (
+	"encoding/json"
 	"sync"
 	"time"
 )
@@ -11,76 +12,80 @@ const (
 
 type Storager interface {
 	// Set expireAt 过期时间, 时间戳
-	Set(key, value string, expireAt int64)
-	Get(key string) string
-	Del(key string)
-	Exists(key string) bool
+	Set(taskName, handleName string, jobId, expireAt int64)
+	Get(taskName string) *Storage
+	Del(taskName string)
+	Exists(taskName string) bool
 	Len() int
-	GetAll() map[string]Storage
+	GetAll() map[string]*Storage
 }
 
 type Storage struct {
-	TaskName   string
 	HandleName string
 	ExpireAt   int64
+	JobId      int64
+}
+
+// Equal 相等
+func (s *Storage) Equal(storage *Storage) bool {
+	marshal1, _ := json.Marshal(s)
+	marshal2, _ := json.Marshal(storage)
+	equal := md5V(marshal1) == md5V(marshal2)
+	return equal
 }
 
 // Expired 已过期
-func (j *Storage) Expired() bool {
-	if j == nil {
+func (s *Storage) Expired() bool {
+	if s == nil {
 		return true
 	}
 
-	if j.ExpireAt == Persistence {
+	if s.ExpireAt == Persistence {
 		return false
 	}
 
-	expire := time.Now().Unix() >= j.ExpireAt
+	expire := time.Now().Unix() >= s.ExpireAt
 	return expire
 }
 
 // Persistence 是否为永久
-func (j *Storage) Persistence() bool {
-	if j == nil {
+func (s *Storage) Persistence() bool {
+	if s == nil {
 		return false
 	}
 
-	return j.ExpireAt == Persistence
+	return s.ExpireAt == Persistence
 }
 
 type SessionStorage struct {
 	mu   sync.RWMutex
-	data map[string]Storage
+	data map[string]*Storage
 }
 
 func NewSessionStorage() *SessionStorage {
-	return &SessionStorage{data: make(map[string]Storage)}
+	return &SessionStorage{data: make(map[string]*Storage)}
 }
 
-func (s *SessionStorage) Set(key, value string, expireAt int64) {
+func (s *SessionStorage) Set(taskName, handleName string, jobId, expireAt int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.data[key] = Storage{
-		TaskName:   key,
-		HandleName: value,
+	s.data[taskName] = &Storage{
+		HandleName: handleName,
 		ExpireAt:   expireAt,
+		JobId:      jobId,
 	}
 }
 
-func (s *SessionStorage) Get(key string) string {
+func (s *SessionStorage) Get(taskName string) *Storage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	storage, exists := s.data[key]
+	storage, exists := s.data[taskName]
 	if !exists {
-		return ""
+		return nil
 	}
 
-	if storage.Expired() {
-		delete(s.data, key)
-		return ""
-	}
-	return storage.HandleName
+	return storage
 }
 
 func (s *SessionStorage) Del(key string) {
@@ -89,10 +94,10 @@ func (s *SessionStorage) Del(key string) {
 	delete(s.data, key)
 }
 
-func (s *SessionStorage) GetAll() map[string]Storage {
+func (s *SessionStorage) GetAll() map[string]*Storage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	data := make(map[string]Storage, len(s.data))
+	data := make(map[string]*Storage, len(s.data))
 	for k, v := range s.data {
 		data[k] = v
 	}
@@ -109,5 +114,9 @@ func (s *SessionStorage) Exists(key string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, exists := s.data[key]
-	return exists
+	if !exists {
+		return false
+	}
+
+	return true
 }

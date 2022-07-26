@@ -1,6 +1,9 @@
 package xxl
 
 import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -22,9 +25,9 @@ func NewAuth(userName string, password string) *AuthImpl {
 	return &AuthImpl{UserName: userName, Password: password}
 }
 
-const (
-	loginUrl = "/login"
-)
+const loginUrl = "/login"
+
+var LoginErr = errors.New("login failed")
 
 // Login 登录
 func (a *AuthImpl) Login(addr string) ([]*http.Cookie, error) {
@@ -47,6 +50,21 @@ func (a *AuthImpl) Login(addr string) ([]*http.Cookie, error) {
 		}
 
 		defer resp.Body.Close()
+
+		all, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		response := &res{}
+		if err = json.Unmarshal(all, response); err != nil {
+			return nil, err
+		}
+
+		if response.Code == FailureCode {
+			return nil, LoginErr
+		}
+
 		a.cookies = resp.Cookies()
 	}
 
