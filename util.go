@@ -1,6 +1,8 @@
 package xxl
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"strconv"
 )
@@ -69,4 +71,10 @@ func returnGeneral() []byte {
 	}
 	str, _ := json.Marshal(data)
 	return str
+}
+
+func md5V(data []byte) string {
+	h := md5.New()
+	h.Write(data)
+	return hex.EncodeToString(h.Sum(nil))
 }

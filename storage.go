@@ -1,6 +1,7 @@
 package xxl
 
 import (
+	"encoding/json"
 	"sync"
 	"time"
 )
@@ -23,29 +24,38 @@ type Storage struct {
 	TaskName   string
 	HandleName string
 	ExpireAt   int64
+	JobId      int64
+}
+
+// Equal 相等
+func (s *Storage) Equal(storage *Storage) bool {
+	marshal1, _ := json.Marshal(s)
+	marshal2, _ := json.Marshal(storage)
+	equal := md5V(marshal1) == md5V(marshal2)
+	return equal
 }
 
 // Expired 已过期
-func (j *Storage) Expired() bool {
-	if j == nil {
+func (s *Storage) Expired() bool {
+	if s == nil {
 		return true
 	}
 
-	if j.ExpireAt == Persistence {
+	if s.ExpireAt == Persistence {
 		return false
 	}
 
-	expire := time.Now().Unix() >= j.ExpireAt
+	expire := time.Now().Unix() >= s.ExpireAt
 	return expire
 }
 
 // Persistence 是否为永久
-func (j *Storage) Persistence() bool {
-	if j == nil {
+func (s *Storage) Persistence() bool {
+	if s == nil {
 		return false
 	}
 
-	return j.ExpireAt == Persistence
+	return s.ExpireAt == Persistence
 }
 
 type SessionStorage struct {
