@@ -129,7 +129,8 @@ func (e *executor) ScanExpiredTask(ch <-chan error) {
 		case <-t.C:
 			shouldDelete := make([]string, 0)
 			for taskName, task := range e.regList.GetAll() {
-				if !e.opts.Storage.Exists(taskName) && !e.runList.Exists(Int64ToStr(task.Id)) {
+				storage := e.opts.Storage.Get(taskName)
+				if storage != nil && storage.Expired() && !e.runList.Exists(Int64ToStr(task.Id)) {
 					shouldDelete = append(shouldDelete, taskName)
 				}
 			}
@@ -182,7 +183,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	}
 	e.log.Debug("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
-		if e.opts.Storage.Exists(param.ExecutorHandler) {
+		if st := e.opts.Storage.Get(param.ExecutorHandler); st != nil && !st.Expired() {
 			// 因为taskList数据存储在内存, 动态注册的任务时, 除去被注册节点, 其他节点并没有该任务数据
 			// 所以需要即时注册该任务
 			e.RegTaskNoStorage(param.ExecutorHandler)
@@ -223,7 +224,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	e.runList.Set(Int64ToStr(task.Id), task)
 	storage := e.opts.Storage.Get(param.ExecutorHandler)
 	var handler TaskFunc = notFoundHandler
-	if storage != nil {
+	if storage != nil && !storage.Expired() {
 		if fn, exists := e.opts.HandlerMap[param.ExecutorHandler]; exists {
 			handler = fn
 		}

@@ -119,20 +119,15 @@ type AddJob struct {
 	GlueSource             string `json:"glueSource"`              // 源码
 }
 
+/********************添加任务响应*******************/
+
 type AddJobResp struct {
 	Code    int         `json:"code"`
 	Msg     interface{} `json:"msg"`
 	Content string      `json:"content"`
 }
 
-type QueryJob struct {
-	JobGroup      int64  `json:"jobGroup"`      // 执行器ID
-	JobId         int64  `json:"jobId"`         // 任务ID, 分页查询, 直接忽略
-	TriggerStatus int32  `json:"triggerStatus"` // 直接使用-1
-	FilterTime    string `json:"filterTime"`    // 直接忽略
-	Start         int32  `json:"start"`         // 偏移量, 默认是0
-	Length        int32  `json:"length"`        // 每页数量
-}
+/********************添加任务参数*******************/
 
 type JobInfo struct {
 	Id                     int       `json:"id"`
@@ -161,15 +156,32 @@ type JobInfo struct {
 	TriggerNextTime        int       `json:"triggerNextTime"`
 }
 
+/********************查询任务参数*******************/
+
+type QueryJob struct {
+	JobGroup      int64  `json:"jobGroup"`      // 执行器ID
+	JobId         int64  `json:"jobId"`         // 任务ID, 分页查询, 直接忽略
+	TriggerStatus int32  `json:"triggerStatus"` // 直接使用-1
+	FilterTime    string `json:"filterTime"`    // 直接忽略
+	Start         int32  `json:"start"`         // 偏移量, 默认是0
+	Length        int32  `json:"length"`        // 每页数量
+}
+
+/********************查询任务响应*******************/
+
 type JobList struct {
 	RecordsFiltered int       `json:"recordsFiltered"`
 	Data            []JobInfo `json:"data"`
 	RecordsTotal    int       `json:"recordsTotal"`
 }
 
+/********************删除任务参数*******************/
+
 type DeleteJob struct {
 	Id int64 `json:"id"`
 }
+
+/********************删除任务响应*******************/
 
 type DeleteJobResp struct {
 	Code    int         `json:"code"`

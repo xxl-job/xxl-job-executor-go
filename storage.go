@@ -59,18 +59,18 @@ func (s *Storage) Persistence() bool {
 
 type SessionStorage struct {
 	mu   sync.RWMutex
-	data map[string]Storage
+	data map[string]*Storage
 }
 
 func NewSessionStorage() *SessionStorage {
-	return &SessionStorage{data: make(map[string]Storage)}
+	return &SessionStorage{data: make(map[string]*Storage)}
 }
 
 func (s *SessionStorage) Set(taskName, handleName string, jobId, expireAt int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.data[taskName] = Storage{
+	s.data[taskName] = &Storage{
 		HandleName: handleName,
 		ExpireAt:   expireAt,
 		JobId:      jobId,
@@ -85,11 +85,7 @@ func (s *SessionStorage) Get(taskName string) *Storage {
 		return nil
 	}
 
-	if storage.Expired() {
-		delete(s.data, taskName)
-		return nil
-	}
-	return &storage
+	return storage
 }
 
 func (s *SessionStorage) Del(key string) {
@@ -103,7 +99,7 @@ func (s *SessionStorage) GetAll() map[string]*Storage {
 	defer s.mu.Unlock()
 	data := make(map[string]*Storage, len(s.data))
 	for k, v := range s.data {
-		data[k] = &v
+		data[k] = v
 	}
 	return data
 }
@@ -117,12 +113,8 @@ func (s *SessionStorage) Len() int {
 func (s *SessionStorage) Exists(key string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	storage, exists := s.data[key]
+	_, exists := s.data[key]
 	if !exists {
-		return false
-	}
-
-	if storage.Expired() {
 		return false
 	}
 
