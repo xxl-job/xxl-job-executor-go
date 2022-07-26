@@ -24,9 +24,9 @@ type Executor interface {
 	// RegTaskNoStorage 注册任务到内存
 	RegTaskNoStorage(pattern string)
 	// RegTempTask 注册临时性任务
-	RegTempTask(pattern string, handlerName string, expireAt int64)
+	RegTempTask(pattern string, handlerName string, jobId, expireAt int64)
 	// RegPersistenceTask 注册任务
-	RegPersistenceTask(pattern, handlerName string)
+	RegPersistenceTask(pattern, handlerName string, jobId int64)
 	// RunTask 运行任务
 	RunTask(writer http.ResponseWriter, request *http.Request)
 	// KillTask 杀死任务
@@ -141,21 +141,21 @@ func (e *executor) ScanExpiredTask(ch <-chan error) {
 }
 
 // RegTempTask 注册临时性任务
-func (e *executor) RegTempTask(pattern string, handlerName string, expireAt int64) {
+func (e *executor) RegTempTask(pattern string, handlerName string, jobId, expireAt int64) {
 	if expireAt <= 0 {
 		e.log.Error("请设置有效的过期时间, 过期时间必须大于0s")
 		return
 	}
 
 	var t = &Task{}
-	e.opts.Storage.Set(pattern, handlerName, expireAt)
+	e.opts.Storage.Set(pattern, handlerName, jobId, expireAt)
 	e.regList.Set(pattern, t)
 }
 
 // RegPersistenceTask 注册任务
-func (e *executor) RegPersistenceTask(pattern, handlerName string) {
+func (e *executor) RegPersistenceTask(pattern, handlerName string, jobId int64) {
 	var t = &Task{}
-	e.opts.Storage.Set(pattern, handlerName, Persistence)
+	e.opts.Storage.Set(pattern, handlerName, jobId, Persistence)
 	e.regList.Set(pattern, t)
 }
 
@@ -221,10 +221,12 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	task.log = e.log
 
 	e.runList.Set(Int64ToStr(task.Id), task)
-	handlerName := e.opts.Storage.Get(param.ExecutorHandler)
-	handler, exists := e.opts.HandlerMap[handlerName]
-	if !exists {
-		handler = notFoundHandler
+	storage := e.opts.Storage.Get(param.ExecutorHandler)
+	var handler TaskFunc = notFoundHandler
+	if storage != nil {
+		if fn, exists := e.opts.HandlerMap[storage.TaskName]; exists {
+			handler = fn
+		}
 	}
 
 	go task.Run(func(code int64, msg string) {

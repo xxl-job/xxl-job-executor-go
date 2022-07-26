@@ -12,10 +12,10 @@ const (
 
 type Storager interface {
 	// Set expireAt 过期时间, 时间戳
-	Set(key, value string, expireAt int64)
-	Get(key string) string
-	Del(key string)
-	Exists(key string) bool
+	Set(taskName, handleName string, jobId, expireAt int64)
+	Get(taskName string) *Storage
+	Del(taskName string)
+	Exists(taskName string) bool
 	Len() int
 	GetAll() map[string]Storage
 }
@@ -67,30 +67,31 @@ func NewSessionStorage() *SessionStorage {
 	return &SessionStorage{data: make(map[string]Storage)}
 }
 
-func (s *SessionStorage) Set(key, value string, expireAt int64) {
+func (s *SessionStorage) Set(taskName, handleName string, jobId, expireAt int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.data[key] = Storage{
-		TaskName:   key,
-		HandleName: value,
+	s.data[taskName] = Storage{
+		TaskName:   taskName,
+		HandleName: handleName,
 		ExpireAt:   expireAt,
+		JobId:      jobId,
 	}
 }
 
-func (s *SessionStorage) Get(key string) string {
+func (s *SessionStorage) Get(taskName string) *Storage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	storage, exists := s.data[key]
+	storage, exists := s.data[taskName]
 	if !exists {
-		return ""
+		return nil
 	}
 
 	if storage.Expired() {
-		delete(s.data, key)
-		return ""
+		delete(s.data, taskName)
+		return nil
 	}
-	return storage.HandleName
+	return &storage
 }
 
 func (s *SessionStorage) Del(key string) {
