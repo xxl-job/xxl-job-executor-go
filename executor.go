@@ -128,12 +128,11 @@ func (e *executor) ScanExpiredTask(ch <-chan error) {
 			return
 		case <-t.C:
 			shouldDelete := make([]string, 0)
-			for taskName := range e.regList.GetAll() {
-				if !e.opts.Storage.Exists(taskName) && !e.runList.Exists(taskName) {
+			for taskName, task := range e.regList.GetAll() {
+				if !e.opts.Storage.Exists(taskName) && !e.runList.Exists(Int64ToStr(task.Id)) {
 					shouldDelete = append(shouldDelete, taskName)
 				}
 			}
-
 			for _, name := range shouldDelete {
 				e.regList.Del(name)
 			}

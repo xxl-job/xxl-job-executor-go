@@ -108,6 +108,14 @@ func (s *SessionStorage) Len() int {
 func (s *SessionStorage) Exists(key string) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	_, exists := s.data[key]
-	return exists
+	storage, exists := s.data[key]
+	if !exists {
+		return false
+	}
+
+	if storage.Expired() {
+		return false
+	}
+
+	return true
 }
