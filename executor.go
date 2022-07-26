@@ -224,7 +224,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	storage := e.opts.Storage.Get(param.ExecutorHandler)
 	var handler TaskFunc = notFoundHandler
 	if storage != nil {
-		if fn, exists := e.opts.HandlerMap[storage.TaskName]; exists {
+		if fn, exists := e.opts.HandlerMap[param.ExecutorHandler]; exists {
 			handler = fn
 		}
 	}

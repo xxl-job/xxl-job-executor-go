@@ -17,11 +17,10 @@ type Storager interface {
 	Del(taskName string)
 	Exists(taskName string) bool
 	Len() int
-	GetAll() map[string]Storage
+	GetAll() map[string]*Storage
 }
 
 type Storage struct {
-	TaskName   string
 	HandleName string
 	ExpireAt   int64
 	JobId      int64
@@ -72,7 +71,6 @@ func (s *SessionStorage) Set(taskName, handleName string, jobId, expireAt int64)
 	defer s.mu.Unlock()
 
 	s.data[taskName] = Storage{
-		TaskName:   taskName,
 		HandleName: handleName,
 		ExpireAt:   expireAt,
 		JobId:      jobId,
@@ -100,12 +98,12 @@ func (s *SessionStorage) Del(key string) {
 	delete(s.data, key)
 }
 
-func (s *SessionStorage) GetAll() map[string]Storage {
+func (s *SessionStorage) GetAll() map[string]*Storage {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	data := make(map[string]Storage, len(s.data))
+	data := make(map[string]*Storage, len(s.data))
 	for k, v := range s.data {
-		data[k] = v
+		data[k] = &v
 	}
 	return data
 }
