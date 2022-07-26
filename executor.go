@@ -181,7 +181,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
-	e.log.Debug("任务参数:%v", param)
+	e.log.Info("任务参数:%+v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		if st := e.opts.Storage.Get(param.ExecutorHandler); st != nil && !st.Expired() {
 			// 因为taskList数据存储在内存, 动态注册的任务时, 除去被注册节点, 其他节点并没有该任务数据
@@ -225,7 +225,8 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	storage := e.opts.Storage.Get(param.ExecutorHandler)
 	var handler TaskFunc = notFoundHandler
 	if storage != nil && !storage.Expired() {
-		if fn, exists := e.opts.HandlerMap[param.ExecutorHandler]; exists {
+		fn, exists := e.opts.HandlerMap[storage.HandleName]
+		if exists {
 			handler = fn
 		}
 	}
@@ -233,7 +234,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	go task.Run(func(code int64, msg string) {
 		e.callback(task, code, msg)
 	}, handler)
-	e.log.Debug("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
+	e.log.Info("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
 	_, _ = writer.Write(returnGeneral())
 }
 
