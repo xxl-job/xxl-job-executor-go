@@ -121,7 +121,7 @@ func (e *executor) Stop() {
 
 // ScanExpiredTask 扫描过期任务, 将其从内存中删除
 func (e *executor) ScanExpiredTask(ch <-chan error) {
-	t := time.NewTicker(time.Minute)
+	t := time.NewTicker(time.Hour)
 	for {
 		select {
 		case <-ch:
@@ -130,7 +130,9 @@ func (e *executor) ScanExpiredTask(ch <-chan error) {
 			shouldDelete := make([]string, 0)
 			for taskName, task := range e.regList.GetAll() {
 				storage := e.opts.Storage.Get(taskName)
-				if storage != nil && storage.Expired() && !e.runList.Exists(Int64ToStr(task.Id)) {
+				if storage == nil {
+					shouldDelete = append(shouldDelete, taskName)
+				} else if storage.Expired() && !e.runList.Exists(Int64ToStr(task.Id)) {
 					shouldDelete = append(shouldDelete, taskName)
 				}
 			}
