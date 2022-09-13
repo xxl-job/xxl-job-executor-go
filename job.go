@@ -29,12 +29,14 @@ const (
 	addJobUrl    = "/jobinfo/add"
 	queryJobUrl  = "/jobinfo/pageList"
 	removeJobUrl = "/jobinfo/remove"
+	runJobUrl    = "/jobinfo/start"
 )
 
 var (
 	AddJobErr   = errors.New("add job failed")
 	QueryJobErr = errors.New("query job failed")
 	DelJobErr   = errors.New("delete job failed")
+	RunJobErr   = errors.New("run job failed")
 )
 
 // Add 添加任务
@@ -182,6 +184,9 @@ func (j *JobImpl) RemoveJob(addr string, cookies []*http.Cookie, req *DeleteJob)
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
 
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -193,13 +198,64 @@ func (j *JobImpl) RemoveJob(addr string, cookies []*http.Cookie, req *DeleteJob)
 		return err
 	}
 
-	response := &DeleteJobResp{}
+	response := &res{}
 	if err = json.Unmarshal(all, response); err != nil {
 		return err
 	}
 
 	if response.Code != SuccessCode {
 		return DelJobErr
+	}
+
+	return nil
+}
+
+func (j *JobImpl) RunJob(addr string, cookies []*http.Cookie, jobId int64) error {
+	values := url.Values{}
+	values.Add("id", Int64ToStr(jobId))
+
+	reader := strings.NewReader(values.Encode())
+
+	client := &http.Client{}
+
+	request, err := http.NewRequest(http.MethodPost, addr+runJobUrl, reader)
+
+	if err != nil {
+		return err
+	}
+
+	for _, cookie := range cookies {
+		request.AddCookie(cookie)
+	}
+
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return RunJobErr
+	}
+
+	all, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	response := &res{}
+	if err = json.Unmarshal(all, response); err != nil {
+		return err
+	}
+
+	if response.Code != SuccessCode {
+		return RunJobErr
 	}
 
 	return nil
