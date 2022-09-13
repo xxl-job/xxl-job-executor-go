@@ -167,6 +167,12 @@ type QueryJob struct {
 	Length        int32  `json:"length"`        // 每页数量
 }
 
+/********************运行任务参数*******************/
+
+type RunJob struct {
+	Id int64 `json:"id"`
+}
+
 /********************查询任务响应*******************/
 
 type JobList struct {
@@ -179,12 +185,4 @@ type JobList struct {
 
 type DeleteJob struct {
 	Id int64 `json:"id"`
-}
-
-/********************删除任务响应*******************/
-
-type DeleteJobResp struct {
-	Code    int         `json:"code"`
-	Msg     interface{} `json:"msg"`
-	Content interface{} `json:"content"`
 }
