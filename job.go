@@ -23,6 +23,8 @@ type Job interface {
 	QueryJobList(addr string, cookies []*http.Cookie, req *QueryJob) (*JobList, error)
 	// RemoveJob 移除任务
 	RemoveJob(addr string, cookies []*http.Cookie, req *DeleteJob) error
+	// RunJob 运行任务
+	RunJob(addr string, cookies []*http.Cookie, jobId int64) error
 }
 
 const (
