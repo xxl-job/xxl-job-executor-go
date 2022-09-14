@@ -1,6 +1,7 @@
 package xxl
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -10,21 +11,26 @@ import (
 )
 
 type JobImpl struct {
+	addr string
+	auth Auth
 }
 
-func NewJob() Job {
-	return &JobImpl{}
+func NewJob(addr string, auth Auth) Job {
+	return &JobImpl{
+		addr: addr,
+		auth: auth,
+	}
 }
 
 type Job interface {
 	// Add 添加任务
-	Add(addr string, cookies []*http.Cookie, req *AddJob) (int64, error)
+	Add(ctx context.Context, req *AddJob) (int64, error)
 	// QueryJobList 查询JobInfo
-	QueryJobList(addr string, cookies []*http.Cookie, req *QueryJob) (*JobList, error)
+	QueryJobList(ctx context.Context, req *QueryJob) (*JobList, error)
 	// RemoveJob 移除任务
-	RemoveJob(addr string, cookies []*http.Cookie, req *DeleteJob) error
+	RemoveJob(ctx context.Context, req *DeleteJob) error
 	// RunJob 运行任务
-	RunJob(addr string, cookies []*http.Cookie, jobId int64) error
+	RunJob(ctx context.Context, jobId int64) error
 }
 
 const (
@@ -42,7 +48,8 @@ var (
 )
 
 // Add 添加任务
-func (j *JobImpl) Add(addr string, cookies []*http.Cookie, req *AddJob) (int64, error) {
+func (j *JobImpl) Add(ctx context.Context, req *AddJob) (int64, error) {
+
 	values := url.Values{}
 	values.Add("jobGroup", Int64ToStr(req.JobGroup))
 	values.Add("jobDesc", req.JobDesc)
@@ -71,12 +78,16 @@ func (j *JobImpl) Add(addr string, cookies []*http.Cookie, req *AddJob) (int64, 
 
 	client := &http.Client{}
 
-	request, err := http.NewRequest(http.MethodPost, addr+addJobUrl, reader)
+	request, err := http.NewRequest(http.MethodPost, j.addr+addJobUrl, reader)
 
 	if err != nil {
 		return 0, err
 	}
 
+	cookies, err := j.auth.Login()
+	if err != nil {
+		return 0, err
+	}
 	for _, cookie := range cookies {
 		request.AddCookie(cookie)
 	}
@@ -117,7 +128,7 @@ func (j *JobImpl) Add(addr string, cookies []*http.Cookie, req *AddJob) (int64, 
 }
 
 // QueryJobList 查询JobInfo
-func (j *JobImpl) QueryJobList(addr string, cookies []*http.Cookie, req *QueryJob) (*JobList, error) {
+func (j *JobImpl) QueryJobList(ctx context.Context, req *QueryJob) (*JobList, error) {
 	values := url.Values{}
 	values.Add("jobGroup", Int64ToStr(req.JobGroup))
 	values.Add("jobId", Int64ToStr(req.JobId))
@@ -129,12 +140,16 @@ func (j *JobImpl) QueryJobList(addr string, cookies []*http.Cookie, req *QueryJo
 
 	client := &http.Client{}
 
-	request, err := http.NewRequest(http.MethodPost, addr+queryJobUrl, reader)
+	request, err := http.NewRequest(http.MethodPost, j.addr+queryJobUrl, reader)
 
 	if err != nil {
 		return nil, err
 	}
 
+	cookies, err := j.auth.Login()
+	if err != nil {
+		return nil, err
+	}
 	for _, cookie := range cookies {
 		request.AddCookie(cookie)
 	}
@@ -165,7 +180,7 @@ func (j *JobImpl) QueryJobList(addr string, cookies []*http.Cookie, req *QueryJo
 }
 
 // RemoveJob 移除任务
-func (j *JobImpl) RemoveJob(addr string, cookies []*http.Cookie, req *DeleteJob) error {
+func (j *JobImpl) RemoveJob(ctx context.Context, req *DeleteJob) error {
 	values := url.Values{}
 	values.Add("id", Int64ToStr(req.Id))
 
@@ -173,8 +188,13 @@ func (j *JobImpl) RemoveJob(addr string, cookies []*http.Cookie, req *DeleteJob)
 
 	client := &http.Client{}
 
-	request, err := http.NewRequest(http.MethodPost, addr+removeJobUrl, reader)
+	request, err := http.NewRequest(http.MethodPost, j.addr+removeJobUrl, reader)
 
+	if err != nil {
+		return err
+	}
+
+	cookies, err := j.auth.Login()
 	if err != nil {
 		return err
 	}
@@ -212,7 +232,7 @@ func (j *JobImpl) RemoveJob(addr string, cookies []*http.Cookie, req *DeleteJob)
 	return nil
 }
 
-func (j *JobImpl) RunJob(addr string, cookies []*http.Cookie, jobId int64) error {
+func (j *JobImpl) RunJob(ctx context.Context, jobId int64) error {
 	values := url.Values{}
 	values.Add("id", Int64ToStr(jobId))
 
@@ -220,8 +240,13 @@ func (j *JobImpl) RunJob(addr string, cookies []*http.Cookie, jobId int64) error
 
 	client := &http.Client{}
 
-	request, err := http.NewRequest(http.MethodPost, addr+runJobUrl, reader)
+	request, err := http.NewRequest(http.MethodPost, j.addr+runJobUrl, reader)
 
+	if err != nil {
+		return err
+	}
+
+	cookies, err := j.auth.Login()
 	if err != nil {
 		return err
 	}
