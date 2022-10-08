@@ -134,7 +134,7 @@ func (j *JobImpl) QueryJobList(ctx context.Context, req *QueryJob) (*JobList, er
 	values.Add("jobId", Int64ToStr(req.JobId))
 	values.Add("triggerStatus", Int64ToStr(int64(req.TriggerStatus)))
 	values.Add("start", Int64ToStr(int64(req.Start)))
-	values.Add("Length", Int64ToStr(int64(req.Length)))
+	values.Add("length", Int64ToStr(int64(req.Length)))
 
 	reader := strings.NewReader(values.Encode())
 

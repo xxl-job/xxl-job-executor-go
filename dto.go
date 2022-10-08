@@ -98,7 +98,7 @@ type AddJob struct {
 	JobGroup               int64  `json:"jobGroup"`                // 执行器ID
 	JobDesc                string `json:"jobDesc"`                 // 任务描述
 	Author                 string `json:"author"`                  // 作者
-	TriggerStatus          int64  `json:"triggerStatus"`           // 任务状态
+	TriggerStatus          int32  `json:"triggerStatus"`           // 任务状态
 	AlarmEmail             string `json:"alarmEmail"`              // 多个邮件使用逗号分隔
 	ScheduleType           string `json:"scheduleType"`            // 调度类型, CRON 定时, FIX_RATE 固定速率
 	ScheduleConf           string `json:"scheduleConf"`            // 必传
@@ -114,7 +114,7 @@ type AddJob struct {
 	MisfireStrategy        string `json:"misfireStrategy"`         // 调度过期策略, DO_NOTHING 忽略, FIRE_ONCE_NOW 立即执行一次
 	ExecutorBlockStrategy  string `json:"executorBlockStrategy"`   // 阻塞处理策略, SERIAL_EXECUTION 串行, DISCARD_LATER 丢弃后续调度, COVER_EARLY 覆盖之前调度
 	ExecutorTimeout        int64  `json:"executorTimeout"`         // 执行超时时间, 单位: s
-	ExecutorFailRetryCount int64  `json:"executorFailRetryCount"`  // 失败重试次数
+	ExecutorFailRetryCount int32  `json:"executorFailRetryCount"`  // 失败重试次数
 	GlueRemark             string `json:"glueRemark"`              // 值为: GLUE代码初始化
 	GlueSource             string `json:"glueSource"`              // 源码
 }
