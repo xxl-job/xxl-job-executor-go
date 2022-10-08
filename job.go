@@ -55,7 +55,7 @@ func (j *JobImpl) Add(ctx context.Context, req *AddJob) (int64, error) {
 	values.Add("jobDesc", req.JobDesc)
 	values.Add("author", req.Author)
 	values.Add("scheduleType", req.ScheduleType)
-	values.Add("triggerStatus", Int64ToStr(req.TriggerStatus))
+	values.Add("triggerStatus", Int64ToStr(int64(req.TriggerStatus)))
 	values.Add("alarmEmail", req.AlarmEmail)
 	values.Add("scheduleConf", req.ScheduleConf)
 	values.Add("schedule_conf_CRON", req.ScheduleConfCron)
@@ -70,7 +70,7 @@ func (j *JobImpl) Add(ctx context.Context, req *AddJob) (int64, error) {
 	values.Add("misfireStrategy", req.MisfireStrategy)
 	values.Add("executorBlockStrategy", req.ExecutorBlockStrategy)
 	values.Add("executorTimeout", Int64ToStr(req.ExecutorTimeout))
-	values.Add("executorFailRetryCount", Int64ToStr(req.ExecutorFailRetryCount))
+	values.Add("executorFailRetryCount", Int64ToStr(int64(req.ExecutorFailRetryCount)))
 	values.Add("glueRemark", req.GlueRemark)
 	values.Add("glueSource", req.GlueSource)
 
