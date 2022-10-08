@@ -159,12 +159,13 @@ type JobInfo struct {
 /********************查询任务参数*******************/
 
 type QueryJob struct {
-	JobGroup      int64  `json:"jobGroup"`      // 执行器ID
-	JobId         int64  `json:"jobId"`         // 任务ID, 分页查询, 直接忽略
-	TriggerStatus int32  `json:"triggerStatus"` // 直接使用-1
-	FilterTime    string `json:"filterTime"`    // 直接忽略
-	Start         int32  `json:"start"`         // 偏移量, 默认是0
-	Length        int32  `json:"length"`        // 每页数量
+	JobGroup        int64  `json:"jobGroup"`        // 执行器ID
+	TriggerStatus   int32  `json:"triggerStatus"`   // 直接使用-1
+	JobDesc         string `json:"jobDesc"`         // 任务描述
+	ExecutorHandler string `json:"executorHandler"` // 任务名
+	Author          string `json:"author"`          // 作者
+	Start           int32  `json:"start"`           // 偏移量, 默认是0
+	Length          int32  `json:"length"`          // 每页数量
 }
 
 /********************运行任务参数*******************/

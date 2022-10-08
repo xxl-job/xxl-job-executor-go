@@ -131,8 +131,10 @@ func (j *JobImpl) Add(ctx context.Context, req *AddJob) (int64, error) {
 func (j *JobImpl) QueryJobList(ctx context.Context, req *QueryJob) (*JobList, error) {
 	values := url.Values{}
 	values.Add("jobGroup", Int64ToStr(req.JobGroup))
-	values.Add("jobId", Int64ToStr(req.JobId))
 	values.Add("triggerStatus", Int64ToStr(int64(req.TriggerStatus)))
+	values.Add("jobDesc", req.JobDesc)
+	values.Add("executorHandler", req.ExecutorHandler)
+	values.Add("author", req.Author)
 	values.Add("start", Int64ToStr(int64(req.Start)))
 	values.Add("length", Int64ToStr(int64(req.Length)))
 
