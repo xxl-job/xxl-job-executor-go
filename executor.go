@@ -73,7 +73,7 @@ func (e *executor) Init(opts ...Option) {
 	e.runList = &taskList{
 		data: make(map[string]*Task),
 	}
-	e.address = e.opts.ExecutorIp + ":" + e.opts.ExecutorPort
+	e.address = ":" + e.opts.ExecutorPort
 	go e.registry()
 }
 
