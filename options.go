@@ -2,6 +2,7 @@ package xxl
 
 import (
 	"github.com/go-basic/ipv4"
+	"net/http"
 	"time"
 )
 
@@ -15,6 +16,9 @@ type Options struct {
 	LogDir       string        `json:"log_dir"`       //日志目录
 
 	l Logger //日志处理
+
+	HealthCheck     bool // 是否开启健康检查
+	HealthCheckFunc func(writer http.ResponseWriter, request *http.Request)
 }
 
 func newOptions(opts ...Option) Options {
@@ -81,5 +85,13 @@ func RegistryKey(registryKey string) Option {
 func SetLogger(l Logger) Option {
 	return func(o *Options) {
 		o.l = l
+	}
+}
+
+// HealthCheck xxl服务独立的健康检查接口
+func HealthCheck(f func(writer http.ResponseWriter, request *http.Request)) Option {
+	return func(o *Options) {
+		o.HealthCheck = true
+		o.HealthCheckFunc = f
 	}
 }
