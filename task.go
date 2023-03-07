@@ -3,7 +3,7 @@ package xxl
 import (
 	"context"
 	"fmt"
-	"runtime/debug"
+	"runtime"
 )
 
 // TaskFunc 任务执行函数
@@ -24,16 +24,19 @@ type Task struct {
 }
 
 // Run 运行任务
-func (t *Task) Run(callback func(code int64, msg string)) {
+func (t *Task) Run(callback func(code int64, msg string), fn TaskFunc) {
 	defer func(cancel func()) {
 		if err := recover(); err != nil {
 			t.log.Info(t.Info()+" panic: %v", err)
-			debug.PrintStack() //堆栈跟踪
+			buf := make([]byte, 64<<10) //nolint:gomnd
+			n := runtime.Stack(buf, false)
+			buf = buf[:n]
+			t.log.Error(fmt.Sprintf("err: runtime error\n%s\n", buf))
 			callback(FailureCode, fmt.Sprintf("task panic:%v", err))
 			cancel()
 		}
 	}(t.Cancel)
-	msg := t.fn(t.Ext, t.Param)
+	msg := fn(t.Ext, t.Param)
 	callback(SuccessCode, msg)
 	return
 }

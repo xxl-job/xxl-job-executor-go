@@ -10,11 +10,16 @@ type LogFunc func(req LogReq, res *LogRes) []byte
 
 // Logger 系统日志
 type Logger interface {
+	Debug(format string, a ...interface{})
 	Info(format string, a ...interface{})
 	Error(format string, a ...interface{})
 }
 
 type logger struct {
+}
+
+func (l *logger) Debug(format string, a ...interface{}) {
+	fmt.Println(fmt.Sprintf(format, a...))
 }
 
 func (l *logger) Info(format string, a ...interface{}) {

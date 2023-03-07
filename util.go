@@ -1,6 +1,8 @@
 package xxl
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"strconv"
 )
@@ -8,6 +10,11 @@ import (
 // Int64ToStr int64 to str
 func Int64ToStr(i int64) string {
 	return strconv.FormatInt(i, 10)
+}
+
+// StrToInt64 int64 to str
+func StrToInt64(s string) (int64, error) {
+	return strconv.ParseInt(s, 10, 64)
 }
 
 //执行任务回调
@@ -64,4 +71,10 @@ func returnGeneral() []byte {
 	}
 	str, _ := json.Marshal(data)
 	return str
+}
+
+func md5V(data []byte) string {
+	h := md5.New()
+	h.Write(data)
+	return hex.EncodeToString(h.Sum(nil))
 }

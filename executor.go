@@ -3,6 +3,7 @@ package xxl
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,8 +21,12 @@ type Executor interface {
 	Init(...Option)
 	// LogHandler 日志查询
 	LogHandler(handler LogHandler)
-	// RegTask 注册任务
-	RegTask(pattern string, task TaskFunc)
+	// RegTaskNoStorage 注册任务到内存
+	RegTaskNoStorage(pattern string)
+	// RegTempTask 注册临时性任务
+	RegTempTask(pattern string, handlerName string, jobId, expireAt int64)
+	// RegPersistenceTask 注册任务
+	RegPersistenceTask(pattern, handlerName string, jobId int64)
 	// RunTask 运行任务
 	RunTask(writer http.ResponseWriter, request *http.Request)
 	// KillTask 杀死任务
@@ -98,11 +103,14 @@ func (e *executor) Run() (err error) {
 		Handler:      mux,
 	}
 	// 监听端口并提供服务
-	e.log.Info("Starting server at " + e.address)
+	e.log.Debug("Starting server at " + e.address)
 	go server.ListenAndServe()
+	stopCh := make(chan error)
+	go e.ScanExpiredTask(stopCh)
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+	stopCh <- nil
 	e.registryRemove()
 	return nil
 }
@@ -111,12 +119,56 @@ func (e *executor) Stop() {
 	e.registryRemove()
 }
 
-// RegTask 注册任务
-func (e *executor) RegTask(pattern string, task TaskFunc) {
+// ScanExpiredTask 扫描过期任务, 将其从内存中删除
+func (e *executor) ScanExpiredTask(ch <-chan error) {
+	t := time.NewTicker(time.Hour)
+	for {
+		select {
+		case <-ch:
+			return
+		case <-t.C:
+			shouldDelete := make([]string, 0)
+			for taskName, task := range e.regList.GetAll() {
+				storage := e.opts.Storage.Get(taskName)
+				if storage == nil {
+					shouldDelete = append(shouldDelete, taskName)
+				} else if storage.Expired() && !e.runList.Exists(Int64ToStr(task.Id)) {
+					shouldDelete = append(shouldDelete, taskName)
+				}
+			}
+			for _, name := range shouldDelete {
+				e.regList.Del(name)
+			}
+		}
+	}
+}
+
+// RegTempTask 注册临时性任务
+func (e *executor) RegTempTask(pattern string, handlerName string, jobId, expireAt int64) {
+	if expireAt <= 0 {
+		e.log.Error("请设置有效的过期时间, 过期时间必须大于0s")
+		return
+	}
+
 	var t = &Task{}
-	t.fn = task
+	e.opts.Storage.Set(pattern, handlerName, jobId, expireAt)
 	e.regList.Set(pattern, t)
-	return
+}
+
+// RegPersistenceTask 注册任务
+func (e *executor) RegPersistenceTask(pattern, handlerName string, jobId int64) {
+	var t = &Task{}
+	e.opts.Storage.Set(pattern, handlerName, jobId, Persistence)
+	e.regList.Set(pattern, t)
+}
+
+func (e *executor) RegTaskNoStorage(pattern string) {
+	var t = &Task{}
+	e.regList.Set(pattern, t)
+}
+
+func notFoundHandler(cxt context.Context, param *RunReq) string {
+	panic(fmt.Sprintf("JobId=%d, ExecutorHandler=%s, 未找到该任务处理器", param.JobID, param.ExecutorHandler))
 }
 
 // 运行一个任务
@@ -132,11 +184,17 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
-	e.log.Info("任务参数:%v", param)
+	e.log.Info("任务参数:%+v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
-		_, _ = writer.Write(returnCall(param, FailureCode, "Task not registered"))
-		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
-		return
+		if st := e.opts.Storage.Get(param.ExecutorHandler); st != nil {
+			// 因为taskList数据存储在内存, 动态注册的任务时, 除去被注册节点, 其他节点并没有该任务数据
+			// 所以需要即时注册该任务
+			e.RegTaskNoStorage(param.ExecutorHandler)
+		} else {
+			_, _ = writer.Write(returnCall(param, FailureCode, "Task not registered"))
+			e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
+			return
+		}
 	}
 
 	//阻塞策略处理
@@ -167,9 +225,18 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	task.log = e.log
 
 	e.runList.Set(Int64ToStr(task.Id), task)
+	storage := e.opts.Storage.Get(param.ExecutorHandler)
+	var handler TaskFunc = notFoundHandler
+	if storage != nil {
+		fn, exists := e.opts.HandlerMap[storage.HandleName]
+		if exists {
+			handler = fn
+		}
+	}
+
 	go task.Run(func(code int64, msg string) {
 		e.callback(task, code, msg)
-	})
+	}, handler)
 	e.log.Info("任务[" + Int64ToStr(param.JobID) + "]开始执行:" + param.ExecutorHandler)
 	_, _ = writer.Write(returnGeneral())
 }
@@ -242,7 +309,7 @@ func (e *executor) idleBeat(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("idleBeat任务[" + Int64ToStr(param.JobID) + "]正在运行")
 		return
 	}
-	e.log.Info("忙碌检测任务参数:%v", param)
+	e.log.Debug("忙碌检测任务参数:%v", param)
 	_, _ = writer.Write(returnGeneral())
 }
 
@@ -281,7 +348,7 @@ func (e *executor) registry() {
 				e.log.Error("执行器注册失败3:" + string(body))
 				return
 			}
-			e.log.Info("执行器注册成功:" + string(body))
+			e.log.Debug("执行器注册成功:" + string(body))
 		}()
 
 	}
