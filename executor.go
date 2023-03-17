@@ -158,7 +158,6 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	oriTask := e.regList.Get(param.ExecutorHandler)
 	task := &Task{
 		fn:        oriTask.fn,
-		log:       oriTask.log,
 		StartTime: time.Now().Unix(),
 	}
 	if param.ExecutorTimeout > 0 {
