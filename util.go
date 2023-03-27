@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"strconv"
 )
 
@@ -33,7 +32,6 @@ func returnCall(req *RunReq, code int64, msg string) []byte {
 		},
 	}
 	str, _ := json.Marshal(data)
-	fmt.Println("returnCall: ", string(str))
 	return str
 }
 
