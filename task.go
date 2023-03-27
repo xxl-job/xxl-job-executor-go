@@ -19,6 +19,7 @@ type Task struct {
 	Cancel    context.CancelFunc
 	StartTime int64
 	EndTime   int64
+	LogID     int64
 	//日志
 	log Logger
 }

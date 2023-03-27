@@ -1,6 +1,7 @@
 package xxl
 
 import (
+	"fmt"
 	"github.com/go-basic/ipv4"
 	"time"
 )
@@ -14,9 +15,19 @@ type Options struct {
 	RegistryKey  string        `json:"registry_key"`  //执行器名称
 	LogDir       string        `json:"log_dir"`       //日志目录
 
-	Storage    Storager            // 任务存储
-	HandlerMap map[string]TaskFunc // 任务函数
-	l          Logger              //日志处理
+	Storage           Storager            // 任务存储
+	HandlerMap        map[string]TaskFunc // 任务函数
+	l                 Logger              // 日志处理
+	ConcurrentExecute bool                // 是否并发执行
+}
+
+// GetRunningTaskId 生成运行任务ID
+func (o *Options) GetRunningTaskId(jobId, logId int64) string {
+	if o.ConcurrentExecute {
+		return fmt.Sprintf("%d-%d", jobId, logId)
+	}
+
+	return Int64ToStr(jobId)
 }
 
 func newOptions(opts ...Option) Options {
@@ -99,5 +110,12 @@ func SetHandlerMap(m map[string]TaskFunc) Option {
 func SetStorage(storage Storager) Option {
 	return func(o *Options) {
 		o.Storage = storage
+	}
+}
+
+// SetConcurrentExecute 设置是否并发执行
+func SetConcurrentExecute(concurrentExecute bool) Option {
+	return func(o *Options) {
+		o.ConcurrentExecute = concurrentExecute
 	}
 }

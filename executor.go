@@ -7,11 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 )
 
@@ -51,18 +48,20 @@ func NewExecutor(opts ...Option) Executor {
 func newExecutor(opts ...Option) *executor {
 	options := newOptions(opts...)
 	executor := &executor{
-		opts: options,
+		opts:     options,
+		stopChan: make(chan struct{}),
 	}
 	return executor
 }
 
 type executor struct {
-	opts    Options
-	address string
-	regList *taskList //注册任务列表
-	runList *taskList //正在执行任务列表
-	mu      sync.RWMutex
-	log     Logger
+	opts     Options
+	address  string
+	regList  *taskList //注册任务列表
+	runList  *taskList //正在执行任务列表
+	mu       sync.RWMutex
+	log      Logger
+	stopChan chan struct{}
 
 	logHandler LogHandler //日志查询handler
 }
@@ -105,26 +104,30 @@ func (e *executor) Run() (err error) {
 	// 监听端口并提供服务
 	e.log.Debug("Starting server at " + e.address)
 	go server.ListenAndServe()
-	stopCh := make(chan error)
-	go e.ScanExpiredTask(stopCh)
-	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGKILL, syscall.SIGQUIT, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	stopCh <- nil
-	e.registryRemove()
+	go e.ScanExpiredTask()
 	return nil
 }
 
 func (e *executor) Stop() {
+	e.stopChan <- struct{}{}
 	e.registryRemove()
+	e.wait()
+}
+
+// Wait 等待所有运行中的任务结束
+func (e *executor) wait() {
+	for e.runList.Len() > 0 {
+		e.log.Info("正在运行任务数: %d\n", e.runList.Len())
+		time.Sleep(time.Second)
+	}
 }
 
 // ScanExpiredTask 扫描过期任务, 将其从内存中删除
-func (e *executor) ScanExpiredTask(ch <-chan error) {
+func (e *executor) ScanExpiredTask() {
 	t := time.NewTicker(time.Hour)
 	for {
 		select {
-		case <-ch:
+		case <-e.stopChan:
 			return
 		case <-t.C:
 			shouldDelete := make([]string, 0)
@@ -132,7 +135,7 @@ func (e *executor) ScanExpiredTask(ch <-chan error) {
 				storage := e.opts.Storage.Get(taskName)
 				if storage == nil {
 					shouldDelete = append(shouldDelete, taskName)
-				} else if storage.Expired() && !e.runList.Exists(Int64ToStr(task.Id)) {
+				} else if storage.Expired() && !e.runList.Exists(e.opts.GetRunningTaskId(task.Id, task.LogID)) {
 					shouldDelete = append(shouldDelete, taskName)
 				}
 			}
@@ -185,7 +188,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	}
 	e.log.Info("任务参数:%+v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
-		if st := e.opts.Storage.Get(param.ExecutorHandler); st != nil {
+		if e.opts.Storage.Exists(param.ExecutorHandler) {
 			// 因为taskList数据存储在内存, 动态注册的任务时, 除去被注册节点, 其他节点并没有该任务数据
 			// 所以需要即时注册该任务
 			e.RegTaskNoStorage(param.ExecutorHandler)
@@ -197,12 +200,13 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	//阻塞策略处理
-	if e.runList.Exists(Int64ToStr(param.JobID)) {
+	runningTaskId := e.opts.GetRunningTaskId(param.JobID, param.LogID)
+	if e.runList.Exists(runningTaskId) {
 		if param.ExecutorBlockStrategy == coverEarly { //覆盖之前调度
-			oldTask := e.runList.Get(Int64ToStr(param.JobID))
+			oldTask := e.runList.Get(runningTaskId)
 			if oldTask != nil {
 				oldTask.Cancel()
-				e.runList.Del(Int64ToStr(oldTask.Id))
+				e.runList.Del(e.opts.GetRunningTaskId(oldTask.Id, oldTask.LogID))
 			}
 		} else { //单机串行,丢弃后续调度 都进行阻塞
 			_, _ = writer.Write(returnCall(param, FailureCode, "There are tasks running"))
@@ -212,7 +216,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	}
 
 	cxt := context.Background()
-	task := e.regList.Get(param.ExecutorHandler)
+	task := &Task{}
 	if param.ExecutorTimeout > 0 {
 		task.Ext, task.Cancel = context.WithTimeout(cxt, time.Duration(param.ExecutorTimeout)*time.Second)
 	} else {
@@ -222,8 +226,9 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 	task.Name = param.ExecutorHandler
 	task.Param = param
 	task.log = e.log
+	task.LogID = param.LogID
 
-	e.runList.Set(Int64ToStr(task.Id), task)
+	e.runList.Set(runningTaskId, task)
 	storage := e.opts.Storage.Get(param.ExecutorHandler)
 	var handler TaskFunc = notFoundHandler
 	if storage != nil {
@@ -378,7 +383,8 @@ func (e *executor) registryRemove() {
 
 //回调任务列表
 func (e *executor) callback(task *Task, code int64, msg string) {
-	e.runList.Del(Int64ToStr(task.Id))
+	runningTaskId := e.opts.GetRunningTaskId(task.Id, task.LogID)
+	e.runList.Del(runningTaskId)
 	res, err := e.post("/api/callback", string(returnCall(task.Param, code, msg)))
 	if err != nil {
 		e.log.Error("callback err : ", err.Error())
