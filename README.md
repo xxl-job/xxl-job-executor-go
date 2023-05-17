@@ -13,13 +13,15 @@
 9.可自定义日志
 10.自定义日志查看handler
 11.支持外部路由（可与gin集成）
+12.支持自定义中间件
 ```
 
 # Example
-```
+```go
 package main
 
 import (
+	"context"
 	"fmt"
 	xxl "github.com/xxl-job/xxl-job-executor-go"
 	"github.com/xxl-job/xxl-job-executor-go/example/task"
@@ -36,15 +38,9 @@ func main() {
 		xxl.SetLogger(&logger{}),       //自定义日志
 	)
 	exec.Init()
+	exec.Use(customMiddleware)
 	//设置日志查看handler
-	exec.LogHandler(func(req *xxl.LogReq) *xxl.LogRes {
-		return &xxl.LogRes{Code: xxl.SuccessCode, Msg: "", Content: xxl.LogResContent{
-			FromLineNum: req.FromLineNum,
-			ToLineNum:   2,
-			LogContent:  "这个是自定义日志handler",
-			IsEnd:       true,
-		}}
-	})
+	exec.LogHandler(customLogHandle)
 	//注册任务handler
 	exec.RegTask("task.test", task.Test)
 	exec.RegTask("task.test2", task.Test2)
@@ -52,7 +48,17 @@ func main() {
 	log.Fatal(exec.Run())
 }
 
-//xxl.Logger接口实现
+// 自定义日志处理器
+func customLogHandle(req *xxl.LogReq) *xxl.LogRes {
+	return &xxl.LogRes{Code: xxl.SuccessCode, Msg: "", Content: xxl.LogResContent{
+		FromLineNum: req.FromLineNum,
+		ToLineNum:   2,
+		LogContent:  "这个是自定义日志handler",
+		IsEnd:       true,
+	}}
+}
+
+// xxl.Logger接口实现
 type logger struct{}
 
 func (l *logger) Info(format string, a ...interface{}) {
@@ -62,6 +68,17 @@ func (l *logger) Info(format string, a ...interface{}) {
 func (l *logger) Error(format string, a ...interface{}) {
 	log.Println(fmt.Sprintf("自定义日志 - "+format, a...))
 }
+
+// 自定义中间件
+func customMiddleware(tf xxl.TaskFunc) xxl.TaskFunc {
+	return func(cxt context.Context, param *xxl.RunReq) string {
+		log.Println("I am a middleware start")
+		res := tf(cxt, param)
+		log.Println("I am a middleware end")
+		return res
+	}
+}
+
 ```
 # 示例项目
 github.com/xxl-job/xxl-job-executor-go/example/

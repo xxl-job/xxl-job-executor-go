@@ -20,6 +20,8 @@ type Executor interface {
 	Init(...Option)
 	// LogHandler 日志查询
 	LogHandler(handler LogHandler)
+	// Use 使用中间件
+	Use(middlewares ...Middleware)
 	// RegTask 注册任务
 	RegTask(pattern string, task TaskFunc)
 	// RunTask 运行任务
@@ -59,7 +61,8 @@ type executor struct {
 	mu      sync.RWMutex
 	log     Logger
 
-	logHandler LogHandler //日志查询handler
+	logHandler  LogHandler   //日志查询handler
+	middlewares []Middleware //中间件
 }
 
 func (e *executor) Init(opts ...Option) {
@@ -80,6 +83,10 @@ func (e *executor) Init(opts ...Option) {
 // LogHandler 日志handler
 func (e *executor) LogHandler(handler LogHandler) {
 	e.logHandler = handler
+}
+
+func (e *executor) Use(middlewares ...Middleware) {
+	e.middlewares = middlewares
 }
 
 func (e *executor) Run() (err error) {
@@ -114,7 +121,7 @@ func (e *executor) Stop() {
 // RegTask 注册任务
 func (e *executor) RegTask(pattern string, task TaskFunc) {
 	var t = &Task{}
-	t.fn = task
+	t.fn = e.chain(task)
 	e.regList.Set(pattern, t)
 	return
 }
