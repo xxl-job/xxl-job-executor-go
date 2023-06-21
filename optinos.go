@@ -59,7 +59,9 @@ func AccessToken(token string) Option {
 // ExecutorIp 设置执行器IP
 func ExecutorIp(ip string) Option {
 	return func(o *Options) {
-		o.ExecutorIp = ip
+		if ip != "" {
+			o.ExecutorIp = ip
+		}
 	}
 }
 
