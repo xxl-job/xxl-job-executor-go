@@ -1,6 +1,8 @@
 package xxl
 
-//通用响应
+import "time"
+
+// 通用响应
 type res struct {
 	Code int64       `json:"code"` // 200 表示正常、其他失败
 	Msg  interface{} `json:"msg"`  // 错误提示消息
@@ -58,7 +60,11 @@ type RunReq struct {
 	BroadcastTotal        int64  `json:"broadcastTotal"`        // 分片参数：总分片
 }
 
-//终止任务请求参数
+func (r RunReq) GetFileLogger() *FileLogger {
+	return NewFileLogger(time.UnixMilli(r.LogDateTime), r.LogID)
+}
+
+// 终止任务请求参数
 type killReq struct {
 	JobID int64 `json:"jobId"` // 任务ID
 }

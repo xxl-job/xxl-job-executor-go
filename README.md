@@ -1,3 +1,4 @@
+
 # xxl-job-executor-go
 很多公司java与go开发共存，java中有xxl-job做为任务调度引擎，为此也出现了go执行器(客户端)，使用起来比较简单：
 # 支持
@@ -15,6 +16,11 @@
 11.支持外部路由（可与gin集成）
 12.支持自定义中间件
 ```
+
+> 如果需要使用这个fork出来的版本  可以在`go.mod`文件中 replace 一下。
+> 
+> `replace github.com/xxl-job/xxl-job-executor-go v1.2.0 => github.com/marunrun/xxl-job-executor-go v1.3.1`
+
 
 # Example
 ```go

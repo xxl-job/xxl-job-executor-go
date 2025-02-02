@@ -3,6 +3,7 @@ package xxl
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 /**
@@ -31,4 +32,13 @@ func reqErrLogHandler(w http.ResponseWriter, req *LogReq, err error) {
 	}}
 	str, _ := json.Marshal(res)
 	_, _ = w.Write(str)
+}
+
+func FileLogHandler(req *LogReq) *LogRes {
+
+	fileLogger := NewFileLogger(time.UnixMilli(req.LogDateTim), req.LogID)
+
+	log := fileLogger.readLog(req.FromLineNum)
+
+	return &LogRes{Code: SuccessCode, Msg: "", Content: log}
 }

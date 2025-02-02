@@ -6,25 +6,29 @@ import (
 	xxl "github.com/xxl-job/xxl-job-executor-go"
 	"github.com/xxl-job/xxl-job-executor-go/example/task"
 	"log"
+	"time"
 )
 
 func main() {
 	exec := xxl.NewExecutor(
 		xxl.ServerAddr("http://127.0.0.1/xxl-job-admin"),
 		xxl.AccessToken(""),            //请求令牌(默认为空)
-		xxl.ExecutorIp("127.0.0.1"),    //可自动获取
 		xxl.ExecutorPort("9999"),       //默认9999（非必填）
 		xxl.RegistryKey("golang-jobs"), //执行器名称
 		xxl.SetLogger(&logger{}),       //自定义日志
+		xxl.SetGracefulShutdownTime(time.Duration(30)*time.Second),
 	)
 	exec.Init()
 	exec.Use(customMiddleware)
-	//设置日志查看handler
-	exec.LogHandler(customLogHandle)
-	//注册任务handler
+	// 使用日志文件展示日志
+	exec.LogHandler(xxl.FileLogHandler)
+	// 注册任务handler
 	exec.RegTask("task.test", task.Test)
 	exec.RegTask("task.test2", task.Test2)
 	exec.RegTask("task.panic", task.Panic)
+	// 日志轮转
+	go xxl.RotateLog(context.Background(), time.Hour, 31)
+
 	log.Fatal(exec.Run())
 }
 
@@ -42,11 +46,11 @@ func customLogHandle(req *xxl.LogReq) *xxl.LogRes {
 type logger struct{}
 
 func (l *logger) Info(format string, a ...interface{}) {
-	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))
+	fmt.Println(fmt.Sprintf("自定义日志 - "+time.Now().Format(time.RFC3339)+format, a...))
 }
 
 func (l *logger) Error(format string, a ...interface{}) {
-	log.Println(fmt.Sprintf("自定义日志 - "+format, a...))
+	fmt.Println(fmt.Sprintf("自定义日志 - "+time.Now().Format(time.RFC3339)+format, a...))
 }
 
 // 自定义中间件

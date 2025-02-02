@@ -2,7 +2,7 @@ package xxl
 
 import "sync"
 
-//任务列表 [JobID]执行函数,并行执行时[+LogID]
+// 任务列表 [JobID]执行函数,并行执行时[+LogID]
 type taskList struct {
 	mu   sync.RWMutex
 	data map[string]*Task
@@ -19,7 +19,10 @@ func (t *taskList) Set(key string, val *Task) {
 func (t *taskList) Get(key string) *Task {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	return t.data[key]
+
+	// 同时执行同名任务, 共用一个task指针会在任务回调的时候出错
+	// 所以这里需要重新clone一个
+	return t.data[key].Clone()
 }
 
 // GetAll 获取数据

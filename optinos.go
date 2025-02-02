@@ -6,15 +6,15 @@ import (
 )
 
 type Options struct {
-	ServerAddr   string        `json:"server_addr"`   //调度中心地址
-	AccessToken  string        `json:"access_token"`  //请求令牌
-	Timeout      time.Duration `json:"timeout"`       //接口超时时间
-	ExecutorIp   string        `json:"executor_ip"`   //本地(执行器)IP(可自行获取)
-	ExecutorPort string        `json:"executor_port"` //本地(执行器)端口
-	RegistryKey  string        `json:"registry_key"`  //执行器名称
-	LogDir       string        `json:"log_dir"`       //日志目录
-
-	l Logger //日志处理
+	ServerAddr           string        `json:"server_addr"`   //调度中心地址
+	AccessToken          string        `json:"access_token"`  //请求令牌
+	Timeout              time.Duration `json:"timeout"`       //接口超时时间
+	ExecutorIp           string        `json:"executor_ip"`   //本地(执行器)IP(可自行获取)
+	ExecutorPort         string        `json:"executor_port"` //本地(执行器)端口
+	RegistryKey          string        `json:"registry_key"`  //执行器名称
+	LogDir               string        `json:"log_dir"`       //日志目录
+	GracefulShutdownTime time.Duration `json:"graceful_stop"` //优雅停机超时时间
+	l                    Logger        //日志处理
 }
 
 func newOptions(opts ...Option) Options {
@@ -81,5 +81,12 @@ func RegistryKey(registryKey string) Option {
 func SetLogger(l Logger) Option {
 	return func(o *Options) {
 		o.l = l
+	}
+}
+
+// SetGracefulShutdownTime 设置优雅停机时间
+func SetGracefulShutdownTime(timeout time.Duration) Option {
+	return func(o *Options) {
+		o.GracefulShutdownTime = timeout
 	}
 }

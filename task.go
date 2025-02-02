@@ -23,19 +23,43 @@ type Task struct {
 	log Logger
 }
 
+func (t *Task) Clone() *Task {
+
+	return &Task{
+		Id:        t.Id,
+		Name:      t.Name,
+		Ext:       t.Ext,
+		Param:     t.Param,
+		fn:        t.fn,
+		Cancel:    t.Cancel,
+		StartTime: t.StartTime,
+		EndTime:   t.EndTime,
+		log:       t.log,
+	}
+}
+
 // Run 运行任务
 func (t *Task) Run(callback func(code int64, msg string)) {
-	defer func(cancel func()) {
-		if err := recover(); err != nil {
-			t.log.Info(t.Info()+" panic: %v", err)
-			debug.PrintStack() //堆栈跟踪
-			callback(FailureCode, fmt.Sprintf("task panic:%v", err))
-			cancel()
-		}
-	}(t.Cancel)
-	msg := t.fn(t.Ext, t.Param)
-	callback(SuccessCode, msg)
-	return
+	ch := make(chan string, 1)
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				t.log.Info(t.Info()+" panic: %v", err)
+				debug.PrintStack() //堆栈跟踪
+				callback(FailureCode, fmt.Sprintf("task panic:%v", err))
+			}
+			close(ch)
+		}()
+		msg := t.fn(t.Ext, t.Param)
+		ch <- msg
+	}()
+
+	select {
+	case <-t.Ext.Done():
+		callback(FailureCode, "任务超时")
+	case msg := <-ch:
+		callback(SuccessCode, msg)
+	}
 }
 
 // Info 任务信息
