@@ -148,7 +148,7 @@ func (e *executor) runTask(writer http.ResponseWriter, request *http.Request) {
 		e.log.Error("参数解析错误:" + string(req))
 		return
 	}
-	e.log.Info("任务参数:%v", param)
+	e.log.Debug("任务参数:%v", param)
 	if !e.regList.Exists(param.ExecutorHandler) {
 		_, _ = writer.Write(returnCall(param, FailureCode, "Task not registered"))
 		e.log.Error("任务[" + Int64ToStr(param.JobID) + "]没有注册:" + param.ExecutorHandler)
@@ -297,7 +297,7 @@ func (e *executor) registry() {
 				e.log.Error("执行器注册失败3:" + string(body))
 				return
 			}
-			e.log.Info("执行器注册成功:" + string(body))
+			e.log.Debug("执行器注册成功:" + string(body))
 		}()
 
 	}

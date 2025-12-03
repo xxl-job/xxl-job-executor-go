@@ -9,7 +9,7 @@ import (
 // TaskFunc 任务执行函数
 type TaskFunc func(cxt context.Context, param *RunReq) string
 
-type TaskFuncWithError func(cxt context.Context, runReq RunReq) (string, error)
+type TaskFuncWithError func(cxt context.Context, runReq RunReq) error
 
 // Task 任务
 type Task struct {
@@ -37,13 +37,13 @@ func (t *Task) Run(callback func(code int64, msg string)) {
 		}
 	}(t.Cancel)
 	if t.fnWithError != nil {
-		msg, err := t.fnWithError(t.Ext, *t.Param)
+		err := t.fnWithError(t.Ext, *t.Param)
 		if err != nil {
 			t.log.Error("job execute error, jobName: %s, params: %s, error: %v", t.Name, t.Param.ExecutorParams, err)
 			callback(FailureCode, err.Error())
 			return
 		}
-		callback(SuccessCode, msg)
+		callback(SuccessCode, "ok")
 	} else {
 		msg := t.fn(t.Ext, t.Param)
 		callback(SuccessCode, msg)
