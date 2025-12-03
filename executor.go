@@ -24,6 +24,8 @@ type Executor interface {
 	Use(middlewares ...Middleware)
 	// RegTask 注册任务
 	RegTask(pattern string, task TaskFunc)
+	// RegTaskWithError 注册任务
+	RegTaskWithError(pattern string, task TaskFuncWithError)
 	// RunTask 运行任务
 	RunTask(writer http.ResponseWriter, request *http.Request)
 	// KillTask 杀死任务
@@ -124,6 +126,13 @@ func (e *executor) RegTask(pattern string, task TaskFunc) {
 	t.fn = e.chain(task)
 	e.regList.Set(pattern, t)
 	return
+}
+
+// RegTaskWithError 注册任务
+func (e *executor) RegTaskWithError(pattern string, task TaskFuncWithError) {
+	var t = &Task{}
+	t.fnWithError = task
+	e.regList.Set(pattern, t)
 }
 
 // 运行一个任务
