@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	xxl "github.com/xxl-job/xxl-job-executor-go"
-	"github.com/xxl-job/xxl-job-executor-go/example/task"
 	"log"
+
+	xxl "github.com/scaler111/xxl-job-executor-go"
+	"github.com/scaler111/xxl-job-executor-go/example/task"
 )
 
 func main() {
@@ -40,6 +41,10 @@ func customLogHandle(req *xxl.LogReq) *xxl.LogRes {
 
 // xxl.Logger接口实现
 type logger struct{}
+
+func (l *logger) Trace(format string, a ...interface{}) {
+	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))
+}
 
 func (l *logger) Info(format string, a ...interface{}) {
 	fmt.Println(fmt.Sprintf("自定义日志 - "+format, a...))

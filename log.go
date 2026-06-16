@@ -12,9 +12,14 @@ type LogFunc func(req LogReq, res *LogRes) []byte
 type Logger interface {
 	Info(format string, a ...interface{})
 	Error(format string, a ...interface{})
+	Trace(format string, a ...interface{})
 }
 
 type logger struct {
+}
+
+func (l *logger) Trace(format string, a ...interface{}) {
+	fmt.Println(fmt.Sprintf(format, a...))
 }
 
 func (l *logger) Info(format string, a ...interface{}) {

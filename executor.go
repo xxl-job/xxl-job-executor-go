@@ -288,7 +288,7 @@ func (e *executor) registry() {
 				e.log.Error("执行器注册失败3:" + string(body))
 				return
 			}
-			e.log.Info("执行器注册成功:" + string(body))
+			e.log.Trace("执行器注册成功:" + string(body))
 		}()
 
 	}
